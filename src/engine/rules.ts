@@ -22,6 +22,47 @@ export const SOGLIA_MORALE_CRISI = 30;
 /** Soglia di fiducia società sotto cui scatta il rischio esonero (PRD 3.2) */
 export const SOGLIA_FIDUCIA_ESONERO = 25;
 
+// ---------- Stato iniziale di una nuova carriera (flusso "Nuova Carriera") ----------
+// Fissati con l'utente: fiducia società 70, budget dalla reputazione squadra.
+
+/** Fiducia società iniziale alla creazione della carriera */
+export const FIDUCIA_SOCIETA_INIZIALE = 70;
+/** Fiducia tifosi iniziale (tiepidi ma non ostili) */
+export const FIDUCIA_TIFOSI_INIZIALE = 65;
+/** Reputazione allenatore iniziale (mezza classifica, cresce coi risultati) */
+export const REPUTAZIONE_ALLENATORE_INIZIALE = 50;
+/** Prima settimana di gioco */
+export const SETTIMANA_INIZIALE = 1;
+
+// ---------- Budget iniziale: budget = round(rep³ / 6000) × fattore lega ----------
+// Calibrato sui budget reali delle principali squadre europee (finestra 2025/26):
+// City ~250M, PSG ~180M, Arsenal ~160M, Bayern ~150M, Real ~130M, Inter ~100M,
+// Juve/Milan ~80-90M, Atletico/Dortmund/OM ~90M, medio PL ~40-60M,
+// piccolo Serie A ~10-20M, top Serie B ~5-10M, Championship medio ~10-20M.
+// Costanti centralizzate: si tarano dopo una stagione di prova (PRD 6.1).
+
+export const BUDGET_BASE_DIVISORE = 6000;
+export const BUDGET_MIN = 1_000_000;
+export const BUDGET_MAX = 300_000_000;
+
+/**
+ * Fattore ricchezza per campionato (a parità di reputazione la Premier paga
+ * più della Liga). Match sul nome del campionato (colonna CSV `League` o
+ * dataset curato src/data/leagues.ts): primo pattern che matcha vince.
+ */
+export const FATTORI_BUDGET_LEGA: ReadonlyArray<{ pattern: RegExp; fattore: number }> = [
+  { pattern: /premier\s*league/i, fattore: 1.6 },
+  { pattern: /ligue\s*1/i, fattore: 1.3 },
+  { pattern: /serie\s*a/i, fattore: 1.1 },
+  { pattern: /liga/i, fattore: 1.1 },
+  { pattern: /bundesliga/i, fattore: 1.1 },
+  { pattern: /championship|serie\s*b|2\.?\s*bundesliga|ligue\s*2|segunda/i, fattore: 0.35 },
+  { pattern: /first\s*league|1\.\s*lig|eerste|liga\s*portugal\s*2|challenger|challenge\s*league/i, fattore: 0.35 },
+];
+
+/** Fattore default per campionati non riconosciuti (es. lega demo) */
+export const FATTORE_BUDGET_DEFAULT = 1.0;
+
 /** Limita un valore all'intervallo [min, max] */
 export function clamp(valore: number, min: number = MIN_STATO, max: number = MAX_STATO): number {
   return Math.min(max, Math.max(min, valore));

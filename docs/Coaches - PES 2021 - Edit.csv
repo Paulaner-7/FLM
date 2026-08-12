@@ -1,0 +1,771 @@
+﻿Id;Name;Country;JapName;Adaptability;Photo;Photo_file;EditName;EditCountry;EditPhoto;EditIntern;Value1;Value2;Value3;Value4;Value5;Value6
+2;Jorge Jesus;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+3;Ney Franco;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+4;Ronald Koeman;224;;0;-1;;False;False;False;False;0;6;0;0;0;0
+5;Wouter Vrancken;197;;0;-1;;False;False;False;False;0;6;0;0;0;0
+8;Oliver Glasner;194;;0;-1;;False;False;False;False;0;6;0;0;0;0
+9;Patrick Videira;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+10;Pedro Moreira;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+11;Andrea Sottil;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+12;Ian Cathro;232;;0;-1;;False;False;False;False;0;6;0;0;0;0
+13;Diego Hernán Martínez;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+16;Rubi;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+17;Peter Bosz;224;;0;-1;;False;False;False;False;0;6;0;0;0;0
+19;Gaizka Garitano;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+20;Gustavo Quinteros;145;;0;-1;;False;False;False;False;0;6;0;0;0;0
+21;Alejandro Restrepo;148;;0;-1;;False;False;False;False;0;6;0;0;0;0
+22;Vasco Seabra;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+23;Massimiliano Allegri;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+24;Mohamed Benhachem;76;;0;-1;;False;False;False;False;0;6;0;0;0;0
+25;Marcelo Gallardo;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+26;Michele Mignani;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+27;Jonatan Alba;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+29;Aleksandar Stanojevic;303;;0;-1;;False;False;False;False;0;6;0;0;0;0
+30;Gian Piero Gasperini;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+31;Ernesto Valverde;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+32;Jair Ventura;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+33;Carlos Cuesta;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+34;César Farías;153;;0;-1;;False;False;False;False;0;6;0;0;0;0
+35;Tonda Eckert;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+37;Darko Milanic;235;;0;-1;;False;False;False;False;0;6;0;0;0;0
+38;Jörn Andersen;226;;0;-1;;False;False;False;False;0;6;0;0;0;0
+39;Botelho da Costa;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+43;Roberto D'Aversa;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+44;Ole Werner;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+45;Thorsten Fink;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+50;Unai Emery;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+51;Carlo Ancelotti;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+52;Diego Simeone;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+53;José Luis Mendilibar;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+54;Javier Aguirre;124;;0;-1;;False;False;False;False;0;6;0;0;0;0
+55;Gerard Zaragoza;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+56;Henrik Rydström;237;;0;-1;;False;False;False;False;0;6;0;0;0;0
+57;Cristián Muñoz;147;;0;-1;;False;False;False;False;0;6;0;0;0;0
+58;Sergio Gómez;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+59;Ricardo Catalá;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+65;Edward Still;204;;0;-1;;False;False;False;False;0;6;0;0;0;0
+71;Brian Riemer;203;;0;-1;;False;False;False;False;0;6;0;0;0;0
+77;Shinya Tsukahara;13;;0;-1;;False;False;False;False;0;6;0;0;0;0
+79;Lucas Bovaglio;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+80;Des Buckingham;204;;0;-1;;False;False;False;False;0;6;0;0;0;0
+82;Pepe Bordalás;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+88;Johnny Heitinga;224;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90;Stale Solbakken;226;;0;-1;;False;False;False;False;0;6;0;0;0;0
+93;Manuel Pellegrini;147;;0;-1;;False;False;False;False;0;6;0;0;0;0
+104;Rafael Benítez;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+106;Antonio Conte;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+108;Ruben den Uil;224;;0;-1;;False;False;False;False;0;6;0;0;0;0
+110;Robert Eziakor;80;;0;-1;;False;False;False;False;0;6;0;0;0;0
+111;Fabrizio Castori;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+112;Paulo Pezzolano;152;;0;-1;;False;False;False;False;0;6;0;0;0;0
+114;Mark Robins;204;;0;-1;;False;False;False;False;0;6;0;0;0;0
+115;Brendan Rodgers;225;;0;-1;;False;False;False;False;0;6;0;0;0;0
+119;Mircea Lucescu;229;;0;-1;;False;False;False;False;0;6;0;0;0;0
+121;Phil Parkinson;204;;0;-1;;False;False;False;False;0;6;0;0;0;0
+125;Lorenzo Rubinacci;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+128;Eduardo Baptista;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+129;Luis Tevenet;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+130;Álvaro Pacheco;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+131;Manolo González;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+133;Arda Turan;190;;0;-1;;False;False;False;False;0;6;0;0;0;0
+134;Guillermo Almada;152;;0;-1;;False;False;False;False;0;6;0;0;0;0
+135;Niko Kovac;200;;0;-1;;False;False;False;False;0;6;0;0;0;0
+137;Frank Lampard;204;;0;-1;;False;False;False;False;0;6;0;0;0;0
+138;Okan Buruk;190;;0;-1;;False;False;False;False;0;6;0;0;0;0
+141;João Pedro Pereira;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+142;Maurício Barbieri;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+143;Karel Geraerts;197;;0;-1;;False;False;False;False;0;6;0;0;0;0
+144;Pacheta;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+145;Sebastián Oliveros;148;;0;-1;;False;False;False;False;0;6;0;0;0;0
+148;Frank Schmidt;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+149;Paul Heckingbottom;204;;0;-1;;False;False;False;False;0;6;0;0;0;0
+150;Joseph Oosting;224;;0;-1;;False;False;False;False;0;6;0;0;0;0
+151;Ralf Rangnick;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+152;Eduardo Barroca;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+153;Pablo Correa;152;;0;-1;;False;False;False;False;0;6;0;0;0;0
+154;Luís Pinto;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+159;Alfredo Arias;152;;0;-1;;False;False;False;False;0;6;0;0;0;0
+170;Mauricio Pellegrino;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+172;Míchel;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+176;Bubista;51;;0;-1;;False;False;False;False;0;6;0;0;0;0
+181;John Eustace;204;;0;-1;;False;False;False;False;0;6;0;0;0;0
+182;Guillermo Farré;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+188;Ron Jans;224;;0;-1;;False;False;False;False;0;6;0;0;0;0
+195;Mariano Soso;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+197;Flabio Torres;148;;0;-1;;False;False;False;False;0;6;0;0;0;0
+198;Marcelino;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+207;Totchtawan Sripan;36;;0;-1;;False;False;False;False;0;6;0;0;0;0
+210;Artur Jorge;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+216;Pep Guardiola;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+218;César Peixoto;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+222;Víctor Rivero;147;;0;-1;;False;False;False;False;0;6;0;0;0;0
+226;Stanislav Cherchesov;230;;0;-1;;False;False;False;False;0;6;0;0;0;0
+229;Nicolás Larcamón;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+235;Thiago Carpini;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+236;José Lana;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+237;Jagoba Arrasate;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+239;Éric Roy;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+240;Eddie Howe;204;;0;-1;;False;False;False;False;0;6;0;0;0;0
+241;Shao Jiayi;7;;0;-1;;False;False;False;False;0;6;0;0;0;0
+242;Thierry Debès;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+243;Paulo Autuori;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+244;Carles Martínez;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+246;Olivier Pantaloni;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+247;Christophe Pélissier;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+254;José Juan Romero;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+262;Régis Le Bris;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+264;Hélio Sousa;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+266;André Jardine;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+269;Barros Schelotto;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+274;David González;148;;0;-1;;False;False;False;False;0;6;0;0;0;0
+281;Patrick Kluivert;224;;0;-1;;False;False;False;False;0;6;0;0;0;0
+294;Sabri Lamouchi;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+297;Paulo Fonseca;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+299;Julen Lopetegui;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+302;Fabien Dagneaux;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+304;Mozart Júnior;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+307;Martín Anselmi;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+309;Sotiris Sylaidopoulos;211;;0;-1;;False;False;False;False;0;6;0;0;0;0
+311;Tiago Margarido;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+312;Rui Vitória;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+313;Juan José Ribera;147;;0;-1;;False;False;False;False;0;6;0;0;0;0
+314;Vladimir Weiss;234;;0;-1;;False;False;False;False;0;6;0;0;0;0
+316;Michael Hansen;203;;0;-1;;False;False;False;False;0;6;0;0;0;0
+318;Gustavo Lema;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+321;Rubén Sellés;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+325;Sergen Yalçın;190;;0;-1;;False;False;False;False;0;6;0;0;0;0
+350;Steven Pressley;232;;0;-1;;False;False;False;False;0;6;0;0;0;0
+353;Qurban Qurbanov;195;;0;-1;;False;False;False;False;0;6;0;0;0;0
+354;Francesco Modesto;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+357;Julien Stéphan;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+363;Bruno Baltazar;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+374;Chris Wilder;204;;0;-1;;False;False;False;False;0;6;0;0;0;0
+380;Quique Setién;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+389;Nuno Santo;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+392;Claude Puel;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+395;Lee-Roy Echteld;224;;0;-1;;False;False;False;False;0;6;0;0;0;0
+396;Marcelo Bielsa;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+412;Jonathan Risueño;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+414;Alessio Lisci;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+417;John Mousinho;204;;0;-1;;False;False;False;False;0;6;0;0;0;0
+422;Tiago Nunes;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+425;Mattia Croci-Torti;238;;0;-1;;False;False;False;False;0;6;0;0;0;0
+430;Emerse Faé;56;;0;-1;;False;False;False;False;0;6;0;0;0;0
+431;Michael Bradley;135;;0;-1;;False;False;False;False;0;6;0;0;0;0
+435;Cosmin Olăroiu;229;;0;-1;;False;False;False;False;0;6;0;0;0;0
+436;Maurizio Sarri;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+446;João Henriques;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+451;Diego Aguirre;152;;0;-1;;False;False;False;False;0;6;0;0;0;0
+471;Abel Ferreira;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+484;Nicola Calabro;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+485;Wedson Nyirenda;94;;0;-1;;False;False;False;False;0;6;0;0;0;0
+486;Liu Jianye;7;;0;-1;;False;False;False;False;0;6;0;0;0;0
+489;Valeriy Karpin;230;;0;-1;;False;False;False;False;0;6;0;0;0;0
+498;Eduardo Domínguez;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+501;Michael Carrick;204;;0;-1;;False;False;False;False;0;6;0;0;0;0
+502;Rob Edwards;241;;0;-1;;False;False;False;False;0;6;0;0;0;0
+505;Javier Rabanal;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+509;Hernán Herrera;148;;0;-1;;False;False;False;False;0;6;0;0;0;0
+517;Sven Vandenbroeck;197;;0;-1;;False;False;False;False;0;6;0;0;0;0
+518;Rogério Corrêa;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+521;Luizinho Lopes;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+535;Yu Genwei;7;;0;-1;;False;False;False;False;0;6;0;0;0;0
+599;Vagner Mancini;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+600;Rodrigo Santana;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+603;Didier Deschamps;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+604;Murat Yakin;238;;0;-1;;False;False;False;False;0;6;0;0;0;0
+605;Tarik Sektioui;76;;0;-1;;False;False;False;False;0;6;0;0;0;0
+606;Zlatko Dalic;200;;0;-1;;False;False;False;False;0;6;0;0;0;0
+608;Ashley Westwood;204;;0;-1;;False;False;False;False;0;6;0;0;0;0
+609;Vítor Matos;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+610;Igor Kudrenko;40;;0;-1;;False;False;False;False;0;6;0;0;0;0
+1045;Michael O'Neill;225;;0;-1;;False;False;False;False;0;6;0;0;0;0
+1046;Rogério Ceni;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+1141;Antonio Gómez;236;;0;-1;;False;False;False;False;0;0;0;0;0;0
+1169;Guoxu Li;7;;0;-1;;False;False;False;False;0;6;0;0;0;0
+1170;Matthias Jaissle;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+1172;Christophe Galtier;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+1173;Alberto Aquilani;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+1175;Gary O'Neil;204;;0;-1;;False;False;False;False;0;6;0;0;0;0
+1176;Maurice Steijn;224;;0;-1;;False;False;False;False;0;6;0;0;0;0
+1177;Rudi Garcia;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+1178;Ricardo Rodríguez;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+1179;Flavio Robatto;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+1180;Rasmus Bertelsen;203;;0;-1;;False;False;False;False;0;6;0;0;0;0
+1183;Dick Schreuder;224;;0;-1;;False;False;False;False;0;6;0;0;0;0
+1195;Igor Tudor;200;;0;-1;;False;False;False;False;0;6;0;0;0;0
+1197;Pierre Sage;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+1203;Álvaro Recoba;152;;0;-1;;False;False;False;False;0;6;0;0;0;0
+1207;Sylvinho;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+1211;Iván Ania;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+1212;Damien Johnson;225;;0;-1;;False;False;False;False;0;6;0;0;0;0
+1213;Alfredo Berti;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+1214;Craig Bellamy;241;;0;-1;;False;False;False;False;0;6;0;0;0;0
+1215;Takuya Takagi;13;;0;-1;;False;False;False;False;0;6;0;0;0;0
+1258;Cláudio Tencati;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+2235;Urs Fischer;238;;0;-1;;False;False;False;False;0;6;0;0;0;0
+2354;Victor Mihailov;223;;0;-1;;False;False;False;False;0;6;0;0;0;0
+2362;Albert Riera;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+2373;Steve McClaren;204;;0;-1;;False;False;False;False;0;6;0;0;0;0
+2399;Adi Hütter;194;;0;-1;;False;False;False;False;0;6;0;0;0;0
+2400;Julian Nagelsmann;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+34653;Filipe Luís;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+34715;Simón Elissetche;147;;0;-1;;False;False;False;False;0;6;0;0;0;0
+34720;Hossam Hassan;58;;0;-1;;False;False;False;False;0;6;0;0;0;0
+34742;Fernando Santos;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+34782;Jacob Friis;203;;0;-1;;False;False;False;False;0;6;0;0;0;0
+34784;Thomas Christiansen;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+34863;Gernot Rohr;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+34924;Steve Clarke;232;;0;-1;;False;False;False;False;0;6;0;0;0;0
+35132;Onur Cinel;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+35180;Gonzalo García;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+35246;Vladimir Petkovic;198;;0;-1;;False;False;False;False;0;6;0;0;0;0
+35270;Graham Arnold;162;;0;-1;;False;False;False;False;0;6;0;0;0;0
+35452;Heimir Hallgrímsson;213;;0;-1;;False;False;False;False;0;6;0;0;0;0
+35457;Joaquín Monasterio;145;;0;-1;;False;False;False;False;0;6;0;0;0;0
+35459;Scott Parker;204;;0;-1;;False;False;False;False;0;6;0;0;0;0
+35502;Zoumana Camara;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+35548;Arthur Papas;162;;0;-1;;False;False;False;False;0;6;0;0;0;0
+35738;Dorival Júnior;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+35739;Jan Urban;227;;0;-1;;False;False;False;False;0;6;0;0;0;0
+35941;Joaquín Papa;152;;0;-1;;False;False;False;False;0;6;0;0;0;0
+35952;Éric Chelle;73;;0;-1;;False;False;False;False;0;6;0;0;0;0
+35953;Félix Sánchez Bas;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+35954;Martin Falk;237;;0;-1;;False;False;False;False;0;6;0;0;0;0
+35955;Zaur Tedeev;230;;0;-1;;False;False;False;False;0;6;0;0;0;0
+35964;Luis Milla;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36124;Gustavo Alfaro;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36214;Marc Dos Santos;110;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36270;Dragan Stojković;303;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36271;Lionel Scaloni;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36272;Koldo Álvarez;192;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36273;Roberto Cevoli;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36274;Willy Sagnol;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36284;Scott Wiseman;245;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36285;Gregg Berhalter;135;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36286;Marco Rossi;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36288;Ran Ben Shimon;189;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36289;Franco Foda;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36290;Luc Holtz;220;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36294;Allan Aal;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36295;Blagoja Milevski;221;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36296;Emilio De Leo;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36297;Ariel Broggi;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36298;Juan David Niño;148;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36299;Kim Hellberg;237;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36301;Eyoun Klakstein;206;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36344;Konrad Funfstuck;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36346;Edgaras Jankauskas;219;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36347;Stephan Lichtsteiner;238;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36348;Matjaz Kek;235;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36349;Miroslav Koubek;202;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36627;Souleymane Camara;65;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36628;Jalel Kadri;92;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36629;Marcelo Copertino;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36630;Alexander Zorniger;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36631;Carlos Alós;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36632;Eghishe Melikyan;193;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36634;Brama Traoré;48;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36635;Serghei Clescenco;223;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36636;Sérgio Conceição;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36638;Hugo Broos;87;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36640;Darren Bazeley;204;;0;-1;;False;False;False;False;0;6;0;0;0;0
+36643;Péricles Chamusca;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90000;Javier Mascherano;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90002;Juan Funes;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90003;Bruce Arena;135;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90004;Apostolos Mantzios;238;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90006;Pablo García;152;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90007;Christian Titz;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90008;Giannis Anastasiou;211;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90011;Milan Rastavac;303;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90012;Konstantinos Bratsos;211;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90013;Nikolaos Papadopoulos;211;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90014;Lucas Gonçalves;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90016;Per-Mathias Høgmo;226;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90017;Christian Ilzer;194;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90018;Savvas Pantelidis;211;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90020;Paolo Vanoli;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90022;Kosta Runjaić;194;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90023;Gary Rowett;204;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90024;Francesco Calzona;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90025;Ilias Charalampous;201;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90026;Romuald Rakotondrabe;71;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90027;Gustavo Poyet;152;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90028;Saad Al Shehri;31;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90031;Néstor Lorenzo;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90032;Pablo Hernández;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90033;Fernando Batista;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90034;Óscar Villegas;145;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90037;Eduardo Barros;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90038;Pedro Martins;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+90039;Carl Hoefkens;197;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100001;F. Merlin;215;;0;-1;;False;False;False;False;0;2;0;0;0;0
+100002;W. Burgoyne;204;;0;-1;;False;False;False;False;0;2;0;0;0;0
+100003;Hayk Milkon;193;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100004;Nicolás Córdova;147;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100005;Zhi Zheng;7;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100006;Amir Ghalenoei;11;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100007;Paolo Nicolato;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100008;Vincenzo Annese;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100009;Dragan Talajic;200;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100010;Koji Gyotoku;13;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100011;Khalid Jamil;17;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100012;Robert Prosinecki;200;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100013;Myo Hlaing Win;24;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100014;Matt Ross;162;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100015;Nolberto Solano;151;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100016;Martin O'Neill;225;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100025;G. Lohner;210;;0;-1;;False;False;False;False;0;0;0;0;0;0
+100026;Phil Neville;204;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100028;Óscar Pareja;148;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100029;Eric Quill;135;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100030;Julian Schuster;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100031;Yoshiyuki Kobayashi;13;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100032;Jakob Poulsen;203;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100033;Steffen Baumgart;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100034;Fabio Ingolitsch;194;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100035;Lukas Kwasniok;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100036;Manolo Márquez;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100037;Gela Shekiladze;209;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100038;João Nuno;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100039;Jens Wissing;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100040;Vu Hong Viet;38;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100041;Merlin Polzin;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100042;Hiroshi Jofuku;13;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100043;Yu Hoshide;13;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100044;Ernest Faber;224;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100045;Diego Arias;148;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100046;Bob Bradley;135;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100047;Greg Vanney;135;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100048;Rikizo Matsuhashi;13;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100049;Marco Donadel;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100050;Hideo Oshima;13;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100051;Stéphane Moulin;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100052;Brian Schmetzer;135;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100053;Pablo Peirano;152;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100054;Raphael Wicky;238;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100056;Iván Delfino;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100057;Sebastian Hoeness;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100059;Issame Charai;197;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100060;Maher Kanzari;92;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100061;Nico Estévez;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100062;Stanimir Stoilov;199;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100063;Matías Almeyda;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100064;Marko Mitrovic;303;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100065;G. Casanova;153;;0;-1;;False;False;False;False;0;0;0;0;0;0
+100066;Anthony Hudson;204;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100067;Cesc Fàbregas;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100068;BJ Callaghan;135;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100069;Hugo Colace;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100070;Henning Berg;226;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100074;Seo Jung-won;16;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100075;Peter Cklamovski;162;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100076;Éver Almeida;150;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100077;Takayuki Yoshida;13;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100078;Kim Pan-gon;16;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100079;Javier Cabrera;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100081;Thierry Mouyouma;62;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100082;Benni McCarthy;87;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100083;Michael Nees;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100084;Kim Sang-sik;16;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100086;Tom Saintfiet;197;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100087;Pape Thiaw;83;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100088;Frédéric Vanderbiest;197;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100089;Keith Andrews;214;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100090;Christos Kontis;211;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100091;Antxon Muneta;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100092;Neil McCann;232;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100093;Tite;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100102;Damián Ayude;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100103;Ignazio Abate;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100104;Raúl Caneda;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100106;Rubén de la Barrera;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100107;Claudio Giráldez;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100108;Eric Ramsay;241;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100109;Sebastián Beccacece;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100110;Chung Jung-yong;16;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100112;Marc Brys;197;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100113;Ehab Abu Jazar;28;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100117;Hernán Gómez;148;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100120;Massimiliano Alvini;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100121;Fred Rutten;224;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100122;Miguel Ángel Ramírez;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100123;Ilian Iliev;199;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100124;Satoshi Yamaguchi;13;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100125;Melvin Boel;224;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100127;Atila Gerin;190;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100135;F. Wyness;204;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100136;Andrea Chiappella;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100137;S. Randall;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100138;Diego Flores;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100139;J. Gillan;11;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100140;Jérémy Taravel;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100143;Park Tae-ha;16;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100144;Paolo Bianco;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100147;Barthélémy Ngatsono;98;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100161;Giovanni Stroppa;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100162;Francisco Arce;150;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100163;Giorgio Gorgone;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100167;Fabio Grosso;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100168;Niels Frederiksen;203;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100169;Daniele De Rossi;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100170;Jorge Bava;152;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100175;Sebastián Leto;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100176;David Moyes;232;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100177;Toru Irie;13;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100178;Vincenzo Montella;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100179;Pellegrino Matarazzo;135;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100184;Vítor Pereira;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100192;Nicky Hayen;197;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100194;Mario Kovacevic;200;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100195;Fabio Cannavaro;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100198;Arne Slot;224;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100206;Igor Oca;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100213;Nicolás Diez;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100214;Leonardo Madelón;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100216;Roberto De Zerbi;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100217;Bartosch Gaul;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100221;Laurent Guyot;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100226;Pedro Troglio;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100227;Cristiano Bacci;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100228;Pablo Repetto;152;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100236;Albert Sánchez;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100237;José Mourinho;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100240;Stéphane Dumont;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100248;Le Kong-soo;16;;0;-1;;False;False;False;False;0;0;0;0;0;0
+100263;Davide Nicola;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100264;Daniel Garnero;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100271;Fabio Pisacane;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100312;Jens Olsen;203;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100342;Carlos Corberán;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100348;Alberto Valentim;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100349;Reinaldo Rueda;148;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100355;Manolo Jiménez;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100368;Eder Sarabia;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100369;Radomir Djalovic;304;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100372;Davide Ballardini;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100373;Jo Gwi-Jae;16;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100398;Michael Petrovic;194;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100399;Nebojsa Jovovic;304;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100402;Benoît Tavenot;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100403;Réginald Ray;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100408;Paul Put;197;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100418;Mubin Ergashev ;41;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100421;Antonio Hidalgo;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100433;Pat Noonan;135;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100464;Shigetoshi Hasebe;13;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100474;Philippe Montanier;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100476;Olivier Frapolli;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100485;Umberto Louzer;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100490;Dick Lukkien;224;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100507;Christian Lattanzio;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100508;Mariusz Jop;227;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100524;Luís Castro;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100525;Dusan Kerkez;198;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100526;Alvaro Arbeloa;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100531;Anthony Popovic;232;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100549;Hernán Caputto;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100598;Sylvain Ripoll;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100602;Imanol Alguacil;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100624;Luis Fernando Tena;124;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100647;Rangsan Viwatchaichok;36;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100648;Frédéric Stilmant;197;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100652;Dietmar Kühbauer;194;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100659;Rafael Guanaes;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100663;Fernando Lázaro;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100664;Alexsandro de Souza;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100670;Björn Hamberg;237;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100671;Petit;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100672;Daisuke Kimori;13;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100690;John van den Brom;224;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100693;Carlos Vicens;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100696;Gerhard Struber;194;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100699;Bolo;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100700;Roberto Donadoni;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100704;Thomas Letsch;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100706;Diego Dabove;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100709;Alberto Gamero;148;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100718;Madjid Bougherra;44;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100719;Momen Soliman;58;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100744;Frédéric Taquin;197;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100749;Daniel Pancu;229;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100750;Joonas Rantanen;207;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100754;Filippo Inzaghi;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100762;Hélio dos Anjos;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100764;Florian Kohfeldt;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100780;Sergej Jakirovic;198;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100795;Sébastien Migné;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100796;Juan Vojvoda;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100812;Matteo Andreoletti;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100813;Cauan de Almeida;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100817;Simone Inzaghi;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100818;Mauricio Pochettino;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100819;Cristian Chivu;229;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100835;Karim Mokeddem;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100839;Juan Carlos Osorio;148;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100849;Lucas Pusineri;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100851;Gennaro Gattuso;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100880;Murad Musaev;230;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100897;Jaime Garcia;147;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100899;Custódio;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100910;Gustavo Florentín;150;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100913;Rui Borges;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100934;Kieran McKenna;225;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100936;Fernando Seabra;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100939;Edgar Cardoso;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100940;Enderson Moreira;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100944;Jorge Almirón;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100947;Fernando Ortiz;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100951;Rick Kruys;224;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100953;Daniel Paulista;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100954;Roger Silva;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100956;Fabian Hürzeler;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100958;Ion Ansotegi;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100961;Vladimir Vujović;304;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100962;Toru Oniki;13;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100963;Hong Myung-bo;16;;0;-1;;False;False;False;False;0;6;0;0;0;0
+100967;Sung-hwan Cho;16;;0;-1;;False;False;False;False;0;2;0;0;0;0
+101026;Pascal Jansen;224;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101043;Ali Aliev;216;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101065;Igor Osinjkin;230;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101066;Domenico Tedesco;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101068;Ahmed Kantari;76;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101069;Eusebio Di Francesco;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101074;Daniel Farke;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101078;Ivan Leko;200;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101079;Francisco Meneghini;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101099;Selçuk İnan;190;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101103;Razvan Lucescu;229;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101104;González Vélez;148;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101114;Jesse Marsch;135;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101119;Viktors Morozs;217;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101122;Berthel Askou;203;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101132;Odair Hellmann;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101149;Hernán Crespo;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101154;Daniel Ramos;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101160;Jindrich Trpišovský;202;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101169;Yusuf Ali Nur;86;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101171;Arturo Reyes;148;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101172;Fernando Diniz;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101174;Metin Diyadin;190;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101194;Nelson Flórez;148;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101197;Adrian Siemieniec;227;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101207;Derek McInnes;232;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101208;Chris Davies;241;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101228;Stephen Robinson;225;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101229;Michael Skibbe;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101231;Graham Potter;204;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101232;Franc Artiga;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101237;Sergey Semak;230;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101247;Oscar Hiljemark;237;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101258;Maciej Skorza;227;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101284;Thomas Nörgaard;203;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101290;Nickolai Lund;203;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101291;Mike Tullberg;203;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101293;Kjetil Knutsen;226;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101299;Emre Belözoglu;190;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101307;Didier Digard;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101314;Liam Rosenior;204;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101319;Leonel Álvarez;148;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101327;Henry van der Vegt;224;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101330;Philippe Clement;197;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101331;Robin Veldman;224;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101335;Nuri Sahin;190;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101342;Sami Uğurlu;190;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101347;Burak Yılmaz;190;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101358;Antoine Kombouaré;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101366;David Hubert;197;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101367;Hemed Suleiman;90;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101429;Gilmar Pozzo;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101457;J. van Gastel;224;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101490;Felice Mazzù;197;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101494;Beñat San José;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101504;Daniel Thioune;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101507;Alberto González;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101523;Gerardo Seoane;238;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101524;Eugen Polanski;227;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101525;Juan Cruz Real;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101529;Franck Rizzetto;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101531;Didier Santini;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101534;Marko Nikolic;303;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101551;Eduardo Coudet;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101555;John McGlynn;232;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101562;Camilo Ayala;148;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101564;Magomed Adiev;230;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101568;Li Xiaopeng;7;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101569;Guido Pizarro;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101570;Robin van Persie;224;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101589;Luis de la Fuente;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101592;Takayuki Nishigaya;13;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101595;David Gray;232;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101599;Thomas Tuchel;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101606;Domènec Torrent;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101615;Ilhan Palut;190;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101624;Osmar Loss;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101633;Danny Buijs;224;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101660;Renato Gaúcho;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101663;Jim Goodwin;214;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101681;Kevin Muscat;162;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101693;Leonid Slutskiy;230;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101738;Vladimir Ivic;303;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101748;Miguel Herrera;124;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101750;Maurício Dulac;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101760;Héctor Bidoglio;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101761;Daniel Bauer;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101767;Luciano Spalletti;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101768;Bruno Génésio;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101769;Omar Daf;83;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101771;Ricardo Valiño;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101783;Carles Cuadrat;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101793;Martín Cicotello;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101794;Gustavo Benítez;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101801;José Alberto López;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101837;Raffaele Palladino;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101839;Francesco Farioli;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101847;Claus Nørgaard;203;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101852;Marco Silva;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101866;Javier Torrente;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101892;José Luis García;148;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101894;Gustavo Costas;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101898;Gustavo Huerta;147;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101902;Matt Bloomfield;204;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101904;Rafael Lacerda;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101917;Jess Thorup;203;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101929;Patricio Almendra;147;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101936;Hwang Sun-hong;16;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101939;Ildar Akhmetzyanov;230;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101940;Andrey Talalaev;230;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101946;Manuel Baum;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101952;Alessio Dionisi;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101957;Luis Miguel Ramis;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101967;Vincenzo Italiano;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101971;Marcel Rapp;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101976;Jürgen Henn;205;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101977;Takashi Kiyama;13;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101979;Petr Kratky;204;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101980;Pablo Guede;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101983;Steve Cooper;241;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101984;Danny Röhl;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101986;Vincent Kompany;197;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101989;Arnar Gunnlaugsson;213;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101991;Grégory Proment;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101993;Jesper Sörensen;203;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101996;Andoni Iraola;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+101999;Jimmy Thelin;237;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102004;Filipe Martins;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102010;Sébastien Tambouret;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102011;Paolo Sammarco;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102018;Alexandre Dujeux;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102024;Brian Priske;203;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102029;Fernando Zaniratto;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102031;Recep Uçar;190;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102034;Marek Papszun;227;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102035;Lukasz Tomczyk;227;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102036;Aleksey Shpilevskiy;196;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102038;A. Jarier;208;;0;-1;;False;False;False;False;0;0;0;0;0;0
+102046;C. Latimer;241;;0;-1;;False;False;False;False;0;0;0;0;0;0
+102052;Mikhail Galaktionov;230;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102063;Li Jinyu;7;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102077;Nenad Stojakovic;303;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102079;L. Armijo;236;;0;-1;;False;False;False;False;0;0;0;0;0;0
+102080;Hansi Flick;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102088;Jacob Neestrup;203;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102092;Moharram Navidkia;11;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102094;Rik De Mil;197;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102095;Hans Cornelis;197;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102104;Facundo Sava;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102106;O. De Luna;236;;0;-1;;False;False;False;False;0;0;0;0;0;0
+102108;Rubén Insúa;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102109;Mikel Arteta;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102111;Claudio Úbeda;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102116;Carles Manso;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102117;Claudinei Oliveira;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102119;Dejan Stanković;303;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102127;Felipe Gutiérrez;147;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102138;Marius Sumudica;229;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102140;Fumitake Miura;13;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102141;Lee Jung-hyo;16;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102142;Fábio Carille;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102143;Dragan Skocic;200;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102146;Noureddine Ould Ali;44;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102150;Daré Nibombé;91;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102152;Sergej Barbarez;198;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102154;Anthony Correia;224;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102156;Ha Hyeok-jun;16;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102157;Ricardo Zielinski;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102159;Igor Kostyuk;239;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102160;Walter Zunino;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102180;Mano Menezes;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102181;Norberto Araujo;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102183;Albert Celades;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102184;Han Peng;7;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102187;Ismail Kartal;190;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102219;Nathan Jones;241;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102220;Fabio Celestini;238;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102232;Hugo Oliveira;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102235;Luis García;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102236;Dwight Yorke;133;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102246;Pedro Gonçalves;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102247;Moreno Longo;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102248;Angelo Gregucci;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102249;Carlos Tevez;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102256;Kent Nielsen;203;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102261;Alex Neil;232;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102269;Go Kuroda;13;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102270;Borja Jiménez;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102271;Rolan Gusev;230;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102274;Peter Zeidler;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102275;Alexandre Gama;146;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102276;Alexander Blessin;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102287;Ivan Jovanovic;303;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102290;Marvin Bartley;204;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102293;Sébastien Desabre;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102297;Jamal Sellami;76;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102299;Francisco Rodríguez;236;;0;-1;;False;False;False;False;0;0;0;0;0;0
+102301;Vadim Evseev;230;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102303;Sergiy Rebrov;239;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102304;Henrik Pedersen;203;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102307;Fatih Tekke;190;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102310;Rado Vidošić;162;;0;-1;;False;False;False;False;0;6;0;0;0;0
+102311;Nestor El Maestro;303;;0;-1;;False;False;False;False;0;6;0;0;0;0
+121567;Hajime Moriyasu;13;;0;-1;;False;False;False;False;0;6;0;0;0;0
+121588;Iñigo Pérez;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+121590;Georgios Donis;238;;0;-1;;False;False;False;False;0;6;0;0;0;0
+121591;Pedro Emanuel;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+121592;José Gomes;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+121593;Grégory Poirier;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+121594;Morena Ramoreboli;87;;0;-1;;False;False;False;False;0;6;0;0;0;0
+121596;Mohamed Ouahbi;76;;0;-1;;False;False;False;False;0;6;0;0;0;0
+131073;Roberto Martínez;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+131120;Sin Yong-nam;15;;0;-1;;False;False;False;False;0;6;0;0;0;0
+131157;Gerardo Martino;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+131344;Robbie Keane;214;;0;-1;;False;False;False;False;0;6;0;0;0;0
+131395;Carlos Queiroz;228;;0;-1;;False;False;False;False;0;6;0;0;0;0
+131403;Kasper Hjulmand;203;;0;-1;;False;False;False;False;0;6;0;0;0;0
+131465;Fabián Bustos;144;;0;-1;;False;False;False;False;0;6;0;0;0;0
+131491;Luis Enrique;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+131522;Juan Carlos Carcedo;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+264388;R. Armandoz;236;;0;-1;;False;False;False;False;0;0;0;0;0;0
+266246;L. Medeiros;228;;0;-1;;False;False;False;False;0;0;0;0;0;0
+524294;ESPIMAS;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+524295;VALENY;208;;0;-1;;False;False;False;False;0;6;0;0;0;0
+524296;KELSEN;194;;0;-1;;False;False;False;False;0;6;0;0;0;0
+524297;IOUGA;229;;0;-1;;False;False;False;False;0;6;0;0;0;0
+524298;NJORGO;226;;0;-1;;False;False;False;False;0;6;0;0;0;0
+524299;HUYLENS;224;;0;-1;;False;False;False;False;0;6;0;0;0;0
+524300;OSTWAUT;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+524301;CELNILI;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+524302;MACCO;241;;0;-1;;False;False;False;False;0;6;0;0;0;0
+524303;CECIU;204;;0;-1;;False;False;False;False;0;6;0;0;0;0
+524304;BURCHET;162;;0;-1;;False;False;False;False;0;6;0;0;0;0
+524305;DULIC;303;;0;-1;;False;False;False;False;0;6;0;0;0;0
+524306;HARTY;214;;0;-1;;False;False;False;False;0;6;0;0;0;0
+524307;BAROTA;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+524308;XIMELEZ;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+524309;NACHDECAL;203;;0;-1;;False;False;False;False;0;6;0;0;0;0
+524310;ZAMENHOF;227;;0;-1;;False;False;False;False;0;6;0;0;0;0
+524312;SABATINI;215;;0;-1;;False;False;False;False;0;6;0;0;0;0
+524313;ARAMBURU;236;;0;-1;;False;False;False;False;0;6;0;0;0;0
+524314;FISCHER;210;;0;-1;;False;False;False;False;0;6;0;0;0;0
+524315;ROLDAN;144;;0;-1;;False;False;False;False;0;6;0;0;0;0

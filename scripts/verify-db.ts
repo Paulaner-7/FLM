@@ -4,7 +4,10 @@
 import 'fake-indexeddb/auto';
 
 import { db } from '../src/db/database';
+import { eliminaCarriera } from '../src/db/carriere';
 import { seedDemo } from '../src/db/seed';
+import { generaCalendario } from '../src/engine/calendario';
+import { budgetCarriera, campionatiDisponibili, posizioniInLega, squadreDellaLega } from '../src/engine/carriera';
 import { eseguiTrasferimento, registraTrattativaSaltata } from '../src/db/transfers';
 import {
   validaBudget,
@@ -47,11 +50,64 @@ async function main(): Promise<void> {
   check('seed: 6 squadre (4 giocabili + 2 ombre)', seed.squadre === 6 && seed.ombre === 2 && seed.giocabili === 4, JSON.stringify(seed));
   check('seed: 80 giocatori', seed.giocatori === 80);
   check('seed: 80 assegnazioni di proprietà', seed.assegnazioni === 80);
-  check('seed: 4 partite giocate', seed.partite === 4);
-  check('seed: 1 competizione', seed.competizioni === 1);
-  check('seed: statoClub presente', (await db.statoClub.get('default')) !== undefined);
+  check('seed: 1 carriera demo', seed.carriere === 1);
+  check('seed: 1 competizione (della carriera)', seed.competizioni === 1);
+  // 4 squadre → 6 giornate × 2 partite = 12 partite di calendario (andata+ritorno)
+  check('seed: 12 partite di calendario', seed.partite === 12, `trovate ${seed.partite}`);
+
+  const carriere = await db.carriere.toArray();
+  check('seed: carriera con StatoClub iniziale', carriere.length === 1 && (await db.statoClub.get(carriere[0]?.id ?? '')) !== undefined);
+  const statoDemo = carriere[0] ? await db.statoClub.get(carriere[0].id) : undefined;
+  // Budget per piazzamento: Meridiana è la squadra più forte della lega (pos 1)
+  const templatePerBudget = (await db.squadre.toArray()).filter((s) => s.carrieraId === undefined);
+  const meridianaTemplate = templatePerBudget.find((s) => s.nome === 'FC Meridiana');
+  const legaDemo = squadreDellaLega(templatePerBudget, 'Serie FLM');
+  const posMeridiana = meridianaTemplate ? posizioniInLega(legaDemo).get(meridianaTemplate.id) ?? 1 : 1;
+  const budgetAtteso = meridianaTemplate ? budgetCarriera(meridianaTemplate, 'Serie FLM', posMeridiana) : -1;
+  check('seed: fiducia società 70', statoDemo?.fiduciaSocieta === 70);
+  check('seed: budget da piazzamento (Meridiana pos 1)', statoDemo?.budget === budgetAtteso, `atteso ${budgetAtteso}, trovato ${statoDemo?.budget}`);
+  const budgetSquadreClonate = new Set((await db.squadre.toArray()).filter((s) => s.carrieraId !== undefined).map((s) => s.budget));
+  check('seed: budget differenziati per squadra (4 valori distinti)', budgetSquadreClonate.size === 4, `valori: ${[...budgetSquadreClonate].join(', ')}`);
+  check('seed: settimana 1', statoDemo?.settimanaCorrente === 1);
+  check('seed: obiettivo memorizzato', statoDemo?.obiettivo === 'coppe');
   const seed2 = await seedDemo();
-  check('seed idempotente (nessun duplicato)', seed2.squadre === 6 && seed2.giocatori === 80);
+  check('seed idempotente (nessun duplicato)', seed2.squadre === 6 && seed2.giocatori === 80 && seed2.carriere === 1);
+
+  // ---------- CALENDARIO ----------
+  const partiteDemo = await db.partite.toArray();
+  const giornate = new Set(partiteDemo.map((p) => p.giornata));
+  check('calendario: 6 giornate (2×(4−1))', giornate.size === 6, `giornate: ${[...giornate].join(', ')}`);
+  check('calendario: nessuna partita giocata', partiteDemo.every((p) => !p.giocata));
+  const squadreClonate = (await db.squadre.toArray()).filter((s) => s.carrieraId !== undefined);
+  check('calendario: 4 squadre clonate', squadreClonate.length === 4);
+  for (const squadra of squadreClonate) {
+    const partiteSquadra = partiteDemo.filter((p) => p.casa === squadra.id || p.trasferta === squadra.id);
+    check(`calendario: ${squadra.nome} gioca 6 partite (3 casa + 3 trasferta)`, partiteSquadra.length === 6 && partiteSquadra.filter((p) => p.casa === squadra.id).length === 3, String(partiteSquadra.length));
+  }
+  const coppia = (a: string, b: string): string => [a, b].sort().join('|');
+  const coppie = partiteDemo.map((p) => coppia(p.casa, p.trasferta));
+  check('calendario: ogni coppia esattamente 2 volte', new Set(coppie).size === 6 && coppie.every((c) => coppie.filter((x) => x === c).length === 2));
+
+  // ---------- CALENDARIO N DISPARI (bye) ----------
+  const dispari = generaCalendario(['a', 'b', 'c', 'd', 'e'], 'comp-test', 'car-test');
+  const giornateDispari = new Set(dispari.map((p) => p.giornata));
+  check('calendario dispari: 5 squadre → 10 giornate × 2 partite = 20', dispari.length === 20 && giornateDispari.size === 10, String(dispari.length));
+  check(
+    'calendario dispari: ogni squadra 8 partite (4 avversari × 2), coppie 2 volte',
+    ['a', 'b', 'c', 'd', 'e'].every((id) => dispari.filter((p) => p.casa === id || p.trasferta === id).length === 8) &&
+      new Set(dispari.map((p) => coppia(p.casa, p.trasferta))).size === 10,
+  );
+  check('calendario: deterministico (stesso input → stesso output)', JSON.stringify(dispari) === JSON.stringify(generaCalendario(['a', 'b', 'c', 'd', 'e'], 'comp-test', 'car-test')));
+
+  // ---------- NAZIONALI E CAMPIONATI ----------
+  const templateNaz = (await db.squadre.toArray()).filter((s) => s.carrieraId === undefined);
+  const disp = campionatiDisponibili(templateNaz);
+  check('campionati: Serie FLM disponibile con 4 squadre', disp.campionati.length === 1 && disp.campionati[0]?.nome === 'Serie FLM' && disp.campionati[0]?.squadre.length === 4);
+  // una squadra "nazionale" per nome viene esclusa dai campionati
+  await db.squadre.add({ id: 'naz-test', pesId: null, nome: 'Italia', nazione: 'ITA', nazionale: false, forza: 4, coefficiente: 50, budget: 100_000_000, reputazione: 85, ombra: false });
+  const disp2 = campionatiDisponibili((await db.squadre.toArray()).filter((s) => s.carrieraId === undefined));
+  check('campionati: "Italia" (nome) finisce tra le nazionali, non nei campionati', disp2.nazionali.some((s) => s.id === 'naz-test') && disp2.campionati.every((c) => c.squadre.every((s) => s.id !== 'naz-test')));
+  await db.squadre.delete('naz-test');
 
   const giocatori = await db.giocatori.toArray();
   const assignments = await db.squadAssignments.toArray();
@@ -69,14 +125,16 @@ async function main(): Promise<void> {
   check('invariante: PES ID tutti null → nessun conflitto', validaPesIdUnivoco(null, giocatori).ok);
 
   // ---------- TRASFERIMENTO VALIDO ----------
-  const meridiana = squadre.find((s) => s.nome === 'FC Meridiana');
-  const falco = squadre.find((s) => s.nome === 'SS Falco');
+  // I test di mercato usano le squadre TEMPLATE (registro), non le clonate
+  const squadreTemplate = squadre.filter((s) => s.carrieraId === undefined);
+  const meridiana = squadreTemplate.find((s) => s.nome === 'FC Meridiana');
+  const falco = squadreTemplate.find((s) => s.nome === 'SS Falco');
   if (!meridiana || !falco) throw new Error('Squadre seed non trovate');
 
   const idsFalco = new Set(
-    assignments.filter((a) => a.squadraId === falco.id && a.tipo === 'proprieta' && !a.al).map((a) => a.giocatoreId),
+    assignments.filter((a) => a.squadraId === falco.id && a.tipo === 'proprieta' && !a.al && a.carrieraId === undefined).map((a) => a.giocatoreId),
   );
-  const attaccanteFalco = giocatori.find((g) => idsFalco.has(g.id) && g.ruolo === 'attaccante' && !g.giovane);
+  const attaccanteFalco = giocatori.find((g) => idsFalco.has(g.id) && g.ruolo === 'attaccante' && !g.giovane && g.carrieraId === undefined);
   if (!attaccanteFalco) throw new Error('Attaccante Falco non trovato');
 
   const budgetMeridianaPrima = meridiana.budget;
@@ -115,9 +173,9 @@ async function main(): Promise<void> {
 
   // ---------- TRASFERIMENTO NON VALIDO: BUDGET INSUFFICIENTE ----------
   const idsMeridiana = new Set(
-    assignments.filter((a) => a.squadraId === meridiana.id && a.tipo === 'proprieta' && !a.al).map((a) => a.giocatoreId),
+    assignments.filter((a) => a.squadraId === meridiana.id && a.tipo === 'proprieta' && !a.al && a.carrieraId === undefined).map((a) => a.giocatoreId),
   );
-  const giocatoreMeridiana = giocatori.find((g) => idsMeridiana.has(g.id) && !g.giovane);
+  const giocatoreMeridiana = giocatori.find((g) => idsMeridiana.has(g.id) && !g.giovane && g.carrieraId === undefined);
   if (!giocatoreMeridiana) throw new Error('Giocatore Meridiana non trovato');
   const esito3 = await eseguiTrasferimento({
     giocatoreId: giocatoreMeridiana.id,
@@ -159,7 +217,7 @@ async function main(): Promise<void> {
   check('PES ID duplicato rilevato', !validaPesIdUnivoco(123, [gPes1, gPes2], 'p1').ok);
   check('PES ID null sempre ok', validaPesIdUnivoco(null, [gPes1, gPes2]).ok);
 
-  const squadraPovera = squadre.find((s) => s.nome === 'SS Falco');
+  const squadraPovera = squadreTemplate.find((s) => s.nome === 'SS Falco');
   if (squadraPovera) {
     check('budget: cifra entro il budget ok', validaBudget(squadraPovera, 2_999_999).ok);
     check('budget: cifra oltre il budget bloccata', !validaBudget(squadraPovera, 3_000_001).ok);
@@ -195,10 +253,22 @@ async function main(): Promise<void> {
 
   // ---------- PULIZIA: RI-SEED PULITO ----------
   const pulito = await seedDemo({ force: true });
+  const assegnazioniTemplate = (await db.squadAssignments.toArray()).filter((a) => a.carrieraId === undefined).length;
   check(
     'ri-seed pulito (ledger e trasferimenti azzerati)',
-    pulito.giocatori === 80 && (await db.transferLedger.count()) === 0 && (await db.squadAssignments.count()) === 80,
+    pulito.giocatori === 80 && (await db.transferLedger.count()) === 0 && assegnazioniTemplate === 80 && pulito.carriere === 1,
   );
+
+  // ---------- ELIMINAZIONE CARRIERA (cascata) ----------
+  const carriere2 = await db.carriere.toArray();
+  const idCarriera = carriere2[0]?.id;
+  if (idCarriera) {
+    await eliminaCarriera(idCarriera);
+    check('eliminazione: riga carriera rimossa', (await db.carriere.count()) === 0);
+    check('eliminazione: copie squadre/giocatori rimosse', (await db.squadre.where('carrieraId').equals(idCarriera).count()) === 0 && (await db.giocatori.where('carrieraId').equals(idCarriera).count()) === 0);
+    check('eliminazione: competizioni/partite/stato rimossi', (await db.competizioni.count()) === 0 && (await db.partite.count()) === 0 && (await db.statoClub.count()) === 0);
+    check('eliminazione: template intatti', (await db.squadre.count()) === 6 && (await db.giocatori.count()) === 80);
+  }
 
   console.log(falliti === 0 ? '\nTUTTI I CHECK PASSATI ✅' : `\n${falliti} CHECK FALLITI ❌`);
   process.exit(falliti === 0 ? 0 : 1);

@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "verify:db": "tsx scripts/verify-db.ts",
+    "verify:leagues": "tsx scripts/verify-leagues.ts",
     "lint": "oxlint",
     "preview": "vite preview"
   },

@@ -27,3 +27,6 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# Stato interno del tool pi (piani, artefatti, skill locali)
+.pi

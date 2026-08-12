@@ -1,11 +1,109 @@
-// FLM — Home
-// M0: schermata vuota con il titolo. Da M2 diventerà il "Portal" stile FM26
-// (PRD 2.2/2.4: inbox decisioni + prossimi impegni + classifica + morale).
+// FLM — Home: hub dei salvataggi ("una carriera = un salvataggio").
+// UI placeholder: struttura pronta a future modifiche grafiche.
 
-export default function Home() {
+import { useEffect, useState, type ReactElement } from 'react';
+import { eliminaCarriera, listaCarriere, squadreTemplate, type CarrieraConDettagli } from '../db';
+
+interface HomeProps {
+  onNuovaCarriera: () => void;
+  onImport: () => void;
+  onDatabase: () => void;
+  onContinua: (carrieraId: string) => void;
+}
+
+const ETICHETTA_OBIETTIVO: Record<string, string> = {
+  salvezza: 'Salvezza',
+  meta_classifica: 'Metà classifica',
+  coppe: 'Coppe',
+  titolo: 'Titolo',
+};
+
+export default function Home({ onNuovaCarriera, onImport, onDatabase, onContinua }: HomeProps): ReactElement {
+  const [carriere, setCarriere] = useState<CarrieraConDettagli[] | null>(null);
+  const [databasePronto, setDatabasePronto] = useState(false);
+  const [daEliminare, setDaEliminare] = useState<string | null>(null);
+
+  const ricarica = (): void => {
+    void listaCarriere().then(setCarriere);
+    void squadreTemplate().then((s) => setDatabasePronto(s.length > 0));
+  };
+
+  useEffect(ricarica, []);
+
+  const confermaEliminazione = async (): Promise<void> => {
+    if (!daEliminare) return;
+    await eliminaCarriera(daEliminare);
+    setDaEliminare(null);
+    ricarica();
+  };
+
+  if (!carriere) {
+    return <main className="page-shell loading-page"><p>Caricamento salvataggi…</p></main>;
+  }
+
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-950">
-      <h1 className="text-6xl font-bold tracking-[0.3em] text-white">FLM</h1>
+    <main className="page-shell home-page">
+      <header className="topbar">
+        <button className="brand-button" type="button">FLM <span>/ Portal</span></button>
+        <div className="topbar-actions">
+          <span className="topbar-note">Football Life Manager · locale-first</span>
+          <button className="button button-small" type="button" onClick={onImport}>Importa database</button>
+          <button className="button button-small button-outline" type="button" onClick={onDatabase}>Database</button>
+        </div>
+      </header>
+
+      <section className="content-wrap home-content">
+        <div className="home-kicker"><span className="signal-dot" /> Le tue carriere, i tuoi salvataggi</div>
+        <h1>Il gioco si gioca.<br /><em>La carriera si costruisce.</em></h1>
+        <p className="home-lead">Ogni carriera è un salvataggio indipendente: mondo, calendario e stato separati. Parti dalla fotografia reale del tuo FL26.</p>
+
+        <div className="home-actions">
+          <button className="button button-primary button-large" type="button" onClick={onNuovaCarriera} disabled={!databasePronto} title={databasePronto ? undefined : 'Importa prima il database FL26'}>Nuova carriera <span>→</span></button>
+        </div>
+        {!databasePronto && <p className="feedback">Nessun database importato: vai su “Importa database” per caricare la fotografia FL26, poi crea la prima carriera.</p>}
+
+        <div className="save-section">
+          <p className="eyebrow">Salvataggi ({carriere.length})</p>
+          {carriere.length === 0 && (
+            <div className="empty-roster">
+              <strong>Nessuna carriera ancora.</strong>
+              <span>Crea il primo salvataggio: scegli squadra e obiettivo, il motore genera calendario e stato.</span>
+            </div>
+          )}
+          <div className="save-list">
+            {carriere.map(({ carriera, squadra, settimanaCorrente }) => (
+              <article key={carriera.id} className="save-card">
+                <div className="save-card-main">
+                  <p className="eyebrow">{carriera.campionato} · {carriera.stagione}</p>
+                  <h2>{squadra?.nome ?? carriera.nome}</h2>
+                  <p className="save-meta">
+                    <span>Obiettivo: <strong>{ETICHETTA_OBIETTIVO[carriera.obiettivo] ?? carriera.obiettivo}</strong></span>
+                    <span>Settimana <strong>{settimanaCorrente}</strong></span>
+                  </p>
+                </div>
+                <div className="save-actions">
+                  <button className="button button-primary" type="button" onClick={() => onContinua(carriera.id)}>Continua</button>
+                  <button className="button button-quiet" type="button" onClick={() => setDaEliminare(carriera.id)}>Elimina</button>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {daEliminare && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Elimina salvataggio">
+          <div className="modal-card">
+            <p className="eyebrow">Elimina salvataggio</p>
+            <h2>Perdere la panchina?</h2>
+            <p>La carriera e tutto il suo stato (calendario, rosa clonata, eventi, mercato) verranno eliminati. Il database importato resta intatto.</p>
+            <div className="modal-actions">
+              <button className="button button-quiet" type="button" onClick={() => setDaEliminare(null)}>Annulla</button>
+              <button className="button button-danger" type="button" onClick={() => void confermaEliminazione()}>Elimina per sempre</button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

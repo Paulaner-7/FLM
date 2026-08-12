@@ -21,6 +21,12 @@ Prima di implementare una feature, rileggi la sezione del PRD relativa.
    Tipi in `src/types/entities.ts`, schema Dexie in `src/db/database.ts`.
 5. **TypeScript strict** — `strict: true` sempre attivo; ogni entità del modello dati ha un tipo
    esplicito; vietato `any` sul modello dati.
+6. **Realismo verificato sul web** — prima di implementare qualsiasi meccanica o dinamica calcistica
+   (valori giocatori, budget, trattative, morale, mercato, infortuni, ecc.), verifica su internet
+   eventi moderni del calcio, situazioni realmente accadute e informazioni pratiche e dettagliate
+   sul mondo del calcio (cifre reali, regole, casi concreti). Implementa solo valori e dinamiche
+   fondati su dati reali verificati e registra la fonte. Obiettivo: carriera allenatore moderna e
+   realistica (PRD 3.1).
 
 ## Convenzioni
 

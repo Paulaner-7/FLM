@@ -4,6 +4,32 @@
 
 export type Id = string;
 
+/**
+ * Obiettivo stagionale scelto a inizio carriera (PRD 3.2: "Obiettivo stagionale
+ * (scelto a inizio)"). Solo memorizzato alla creazione: gli effetti arrivano
+ * col motore fiducia di M2 (attese del presidente vs posizione in classifica).
+ */
+export type ObiettivoStagionale = 'salvezza' | 'meta_classifica' | 'coppe' | 'titolo';
+
+/**
+ * PRD — Carriera ("una carriera = un salvataggio").
+ * Ogni carriera è uno snapshot completo e indipendente: squadre/giocatori/
+ * assegnazioni clonati dal registro al momento della creazione (carrieraId),
+ * più StatoClub, Competizione, calendario, eventi e ledger dedicati.
+ */
+export interface Carriera {
+  id: Id;
+  /** Nome auto-generato, es. "Inter · 2025/26" */
+  nome: string;
+  /** id della squadra dell'utente, clonata con carrieraId = carriera.id */
+  squadraId: Id;
+  campionato: string;
+  obiettivo: ObiettivoStagionale;
+  stagione: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
 /** Forza squadra 1-5 (PRD 3.4) */
 export type Forza = 1 | 2 | 3 | 4 | 5;
 
@@ -73,9 +99,25 @@ export interface Promessa {
  */
 export interface Squadra {
   id: Id;
+  /**
+   * Se presente, la squadra è una copia di carriera (snapshot del campionato
+   * scelto alla creazione). undefined = template nel registro globale.
+   */
+  carrieraId?: string;
+  /** Nome del campionato di appartenenza (colonna CSV `League` o dataset curato). */
+  campionato?: string;
+  /**
+   * Media overall della rosa al bootstrap: base per la forza reale e per il
+   * budget di carriera (piazzamento stimato nell'anno precedente, PRD).
+   */
+  mediaOverall?: number;
+  /** Mapping con l'ID PES della squadra nell'export editor. */
+  pesId: number | null;
   nome: string;
   /** Codice o nome nazione (PRD 7.1: le ombre hanno nome, nazione, forza) */
   nazione: string;
+  /** true per nazionali FL26; le assegnazioni nazionali restano fuori dal bootstrap club. */
+  nazionale: boolean;
   forza: Forza;
   /** Coefficiente per sorteggi europei: determina fasce e teste di serie (PRD 7.1) */
   coefficiente: number;
@@ -92,6 +134,8 @@ export interface Squadra {
  */
 export interface Giocatore {
   id: Id;
+  /** Copia di carriera (vedi Squadra.carrieraId): undefined = registro globale */
+  carrieraId?: string;
   /** Mapping con l'ID PES di FL26 (PRD 7.2): null finché non mappato */
   pesId: number | null;
   nome: string;
@@ -122,6 +166,8 @@ export interface Giocatore {
  */
 export interface SquadAssignment {
   id: Id;
+  /** Copia di carriera (vedi Squadra.carrieraId): undefined = registro globale */
+  carrieraId?: string;
   giocatoreId: Id;
   squadraId: Id;
   tipo: TipoAssegnazione;
@@ -137,6 +183,7 @@ export interface SquadAssignment {
  */
 export interface Competizione {
   id: Id;
+  carrieraId: string;
   nome: string;
   tipo: TipoCompetizione;
   formato: FormatoCompetizione;
@@ -154,6 +201,7 @@ export interface Competizione {
  */
 export interface Partita {
   id: Id;
+  carrieraId: string;
   competizioneId: Id;
   /** Numero del turno: giornata per il girone, turno per le coppe */
   giornata: number;
@@ -169,9 +217,12 @@ export interface Partita {
   note?: string;
 }
 
-/** PRD 3.4 — StatoClub: un record solo, aggiornato a ogni turno */
+/**
+ * PRD 3.4 — StatoClub: un record per carriera, aggiornato a ogni turno.
+ * id = carrieraId ("una carriera = un salvataggio": ogni carriera ha il suo).
+ */
 export interface StatoClub {
-  id: 'default';
+  id: Id;
   /** 0-100 */
   fiduciaSocieta: number;
   /** 0-100 */
@@ -187,6 +238,7 @@ export interface StatoClub {
  */
 export interface Evento {
   id: Id;
+  carrieraId: string;
   settimana: number;
   categoria: CategoriaEvento;
   tipo: TipoEvento;
@@ -207,6 +259,8 @@ export interface Evento {
  */
 export interface TransferLedgerEntry {
   id: Id;
+  /** Carriera di appartenenza: undefined = movimento fuori carriera (es. test su template) */
+  carrieraId?: string;
   giocatoreId: Id;
   daSquadraId: Id;
   aSquadraId: Id;
