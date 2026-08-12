@@ -388,6 +388,7 @@ export async function importaBootstrap(
       campionato: league || undefined,
       mediaOverall: mediaOverall ?? undefined,
       ...profilo,
+      ratingInizioStagione: profilo.rating,
       ombra: false,
     };
   });

@@ -4,6 +4,8 @@
 
 import Dexie, { type EntityTable } from 'dexie';
 
+import { ELO_INIZIALE, ratingInizialeDaMedia } from '../engine/rating';
+
 import type {
   Squadra,
   Giocatore,
@@ -111,6 +113,41 @@ export class FlmDatabase extends Dexie {
       statoClub: 'id',
       eventi: 'id, settimana, categoria, tipo, carrieraId',
       transferLedger: 'id, giocatoreId, aSquadraId, stagione, esito, carrieraId',
+    });
+    // v6: rating Elo continuo al posto della forza 1-5 (PRD 3.2, engine/rating.ts).
+    // Schema identico (rating non indicizzato): upgrade ricalcola il rating delle
+    // squadre esistenti da mediaOverall (se presente) o dalla vecchia forza.
+    this.version(6).stores({
+      carriere: 'id, squadraId, stagione, createdAt',
+      squadre: 'id, pesId, nome, carrieraId',
+      giocatori: 'id, pesId, ruolo, giovane, carrieraId',
+      squadAssignments: 'id, giocatoreId, squadraId, tipo, carrieraId',
+      partite: 'id, competizioneId, giornata, giocata, carrieraId',
+      competizioni: 'id, tipo, stagione, carrieraId',
+      statoClub: 'id',
+      eventi: 'id, settimana, categoria, tipo, carrieraId',
+      transferLedger: 'id, giocatoreId, aSquadraId, stagione, esito, carrieraId',
+    }).upgrade(async (tx) => {
+      const squadre = await tx.table('squadre').toArray();
+      // Mappa della vecchia forza (1-5) verso il rating iniziale demo (seed).
+      // I vecchi record hanno forza, i nuovi rating: il tipo loose copre l'upgrade.
+      const ratingPerForza = new Map<number, number>([
+        [1, 1460], [2, 1580], [3, 1700], [4, 1820], [5, 1940],
+      ]);
+      type VecchiaSquadra = { rating?: number; ratingInizioStagione?: number; mediaOverall?: number; forza?: number };
+      for (const s of squadre as unknown as VecchiaSquadra[]) {
+        if (typeof s.rating === 'number') {
+          // già migrata: manca solo il base stagionale (se assente = rating attuale)
+          if (typeof s.ratingInizioStagione !== 'number') {
+            await tx.table('squadre').put({ ...s, ratingInizioStagione: s.rating });
+          }
+          continue;
+        }
+        const rating = s.mediaOverall !== undefined
+          ? ratingInizialeDaMedia(s.mediaOverall)
+          : (ratingPerForza.get(s.forza ?? -1) ?? ELO_INIZIALE);
+        await tx.table('squadre').put({ ...s, rating, ratingInizioStagione: rating, forza: undefined });
+      }
     });
   }
 }

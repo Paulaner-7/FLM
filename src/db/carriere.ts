@@ -6,6 +6,7 @@
 import { db, newId } from './database';
 import { generaCalendario } from '../engine/calendario';
 import { budgetCarriera, posizioniInLega, squadreDellaLega, statoClubIniziale } from '../engine/carriera';
+import { ratingInizialeCompleto } from '../engine/storico';
 import type {
   Carriera,
   Competizione,
@@ -86,6 +87,10 @@ export async function creaCarriera(input: InputCreazioneCarriera): Promise<Esito
       const squadreClonate: Squadra[] = lega.map((s) => {
         const nuovoId = newId();
         idPerTemplate.set(s.id, nuovoId);
+        // Rating iniziale completo: 50% storico reale (ultime 5 stagioni) + 50% rosa
+        // attuale. Unico per ogni squadra; per le squadre senza storico (demo,
+        // promosse dalla C) vale il solo rating dalla rosa.
+        const rating = ratingInizialeCompleto(s.nome, s.mediaOverall, campionato);
         return {
           ...s,
           id: nuovoId,
@@ -93,6 +98,8 @@ export async function creaCarriera(input: InputCreazioneCarriera): Promise<Esito
           campionato,
           pesId: s.pesId,
           budget: budgetCarriera(s, campionato, posizioni.get(s.id) ?? 1),
+          rating,
+          ratingInizioStagione: rating,
         };
       });
 

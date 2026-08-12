@@ -6,6 +6,8 @@ export { creaCarriera, eliminaCarriera, listaCarriere, squadreTemplate, type Esi
 export type { FlmDatabase } from './database';
 export { eseguiTrasferimento, registraTrattativaSaltata } from './transfers';
 export type { EsitoEsecuzione } from './transfers';
+export { confermaReferto, annullaReferto, prossimaPartita, rosaDellaCarriera } from './referti';
+export type { EsitoConfermaReferto, InputConfermaReferto } from './referti';
 export {
   BOOTSTRAP_STAGIONE_DEFAULT,
   CSV_SEPARATORE,

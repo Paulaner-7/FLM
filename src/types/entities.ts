@@ -30,8 +30,12 @@ export interface Carriera {
   updatedAt: number;
 }
 
-/** Forza squadra 1-5 (PRD 3.4) */
-export type Forza = 1 | 2 | 3 | 4 | 5;
+/**
+ * Rating Elo squadra (continuo, base 1500; sostituisce la forza 1-5 — PRD 3.2).
+ * Deriva dalla media overall all'importazione e VIVE nel tempo: i risultati
+ * (tuoi e CPU) lo muovono a ogni turno (src/engine/rating.ts, formula eloratings).
+ */
+export type Rating = number;
 
 /** Tipo di competizione (PRD 7.1: un template parametrico, le coppe sono istanze) */
 export type TipoCompetizione =
@@ -95,7 +99,7 @@ export interface Promessa {
 
 /**
  * PRD 7.2 — Squadra (Team Registry).
- * La tua + avversarie della lega + squadre ombra (nome, nazione, forza per i sorteggi).
+ * La tua + avversarie della lega + squadre ombra (nome, nazione, rating per i sorteggi).
  */
 export interface Squadra {
   id: Id;
@@ -118,7 +122,13 @@ export interface Squadra {
   nazione: string;
   /** true per nazionali FL26; le assegnazioni nazionali restano fuori dal bootstrap club. */
   nazionale: boolean;
-  forza: Forza;
+  /** Rating Elo continuo (base 1500): guida la simulazione CPU e i sorteggi (PRD 3.2) */
+  rating: Rating;
+  /**
+   * Rating a inizio stagione (base per la mean reversion intra-stagione,
+   * engine/referto.ts ratingEffettivo): si aggiorna a ogni nuova stagione.
+   */
+  ratingInizioStagione?: number;
   /** Coefficiente per sorteggi europei: determina fasce e teste di serie (PRD 7.1) */
   coefficiente: number;
   budget: number;
@@ -198,6 +208,8 @@ export interface Competizione {
 /**
  * PRD 3.4 — Partita.
  * Le tue le inserisci col referto; le altre vengono simulate dal motore (PRD 3.2).
+ * I campi strutturati (titolari, infortunati, …) servono al rollback del referto
+ * entro lo stesso turno e allo storico; `note` è il testo leggibile composto dal motore.
  */
 export interface Partita {
   id: Id;
@@ -214,7 +226,18 @@ export interface Partita {
   /** Nomi dei marcatori (PRD 3.4) */
   marcatori: string[];
   giocata: boolean;
+  /** Testo leggibile delle note del referto (espulsioni, infortuni, prestazioni) */
   note?: string;
+  /** ID dei titolari schierati (referto utente): base per minuti e rollback */
+  titolari?: Id[];
+  /** ID dei giocatori con prestazione eccezionale (referto utente) */
+  prestazioniEccezionali?: Id[];
+  /** ID dei giocatori infortunatisi in partita (referto utente) */
+  infortunati?: Id[];
+  /** ID dei giocatori espulsi (referto utente) */
+  espulsi?: Id[];
+  /** Rating Elo delle due squadre PRIMA della partita: serve al rollback del referto */
+  ratingPrima?: { casa: number; trasferta: number };
 }
 
 /**

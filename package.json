@@ -8,6 +8,8 @@
     "build": "tsc -b && vite build",
     "verify:db": "tsx scripts/verify-db.ts",
     "verify:leagues": "tsx scripts/verify-leagues.ts",
+    "verify:referto": "tsx scripts/verify-referto.ts",
+    "calibra:sim": "tsx scripts/calibra-sim.ts",
     "lint": "oxlint",
     "preview": "vite preview"
   },

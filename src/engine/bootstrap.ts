@@ -1,7 +1,7 @@
 // FLM — Regole numeriche per bootstrap da PES Editor.
 // I CSV forniscono dati grezzi; ogni valore di gioco derivato vive qui.
 
-import type { Forza } from '../types/entities';
+import { ratingInizialeDaMedia } from './rating';
 
 export interface ValoriGiocatoreBootstrap {
   morale: number;
@@ -12,7 +12,7 @@ export interface ValoriGiocatoreBootstrap {
 }
 
 export interface ProfiloSquadraBootstrap {
-  forza: Forza;
+  rating: number;
   coefficiente: number;
   budget: number;
   reputazione: number;
@@ -31,21 +31,24 @@ export function valoriGiocatoreBootstrap(eta: number): ValoriGiocatoreBootstrap 
 
 /**
  * Crea profilo numerico minimo quando export editor non contiene finanze o rating club.
- * Media overall resta unica fonte per forza e coefficiente; budget/reputazione usano fallback
- * deterministici, mai valori inventati dall'LLM.
+ * Media overall resta unica fonte per rating e coefficiente; budget/reputazione usano
+ * fallback deterministici, mai valori inventati dall'LLM.
+ * Il rating Elo iniziale è continuo (ratingInizialeDaMedia) e poi vive coi risultati.
  */
 export function profiloSquadraBootstrap(
   mediaOverall: number | null,
   nazionale: boolean,
 ): ProfiloSquadraBootstrap {
   const overall = mediaOverall ?? 60;
-  const forza: Forza = overall >= 80 ? 5 : overall >= 72 ? 4 : overall >= 64 ? 3 : overall >= 55 ? 2 : 1;
+  const rating = ratingInizialeDaMedia(overall);
   const coefficiente = Math.max(0, Math.round((overall - 50) * 1.5));
+  // Fallback budget/reputazione: gradazioni ampie ma deterministiche (rating ≈ 100 punti = 1 livello)
+  const livello = Math.min(5, Math.max(1, Math.round((rating - 1400) / 100)));
 
   return {
-    forza,
+    rating,
     coefficiente,
-    budget: nazionale ? 0 : forza * 5_000_000,
-    reputazione: nazionale ? 70 : Math.min(95, 25 + forza * 12),
+    budget: nazionale ? 0 : livello * 5_000_000,
+    reputazione: nazionale ? 70 : Math.min(95, 25 + livello * 12),
   };
 }

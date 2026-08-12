@@ -128,7 +128,7 @@ export default function Database({ onImport, onHome }: DatabaseProps): ReactElem
                   <div>
                     <p className="eyebrow">{selectedTeam.nazionale ? 'Nazionale' : 'Club'} · {selectedTeam.nazione}</p>
                     <h2>{selectedTeam.nome}</h2>
-                    <p>PES ID {selectedTeam.pesId ?? '—'} · forza {selectedTeam.forza}/5 · {selectedRoster.length.toLocaleString('it-IT')} giocatori assegnati</p>
+                    <p>PES ID {selectedTeam.pesId ?? '—'} · potenza {selectedTeam.rating} · {selectedRoster.length.toLocaleString('it-IT')} giocatori assegnati</p>
                   </div>
                   <span className="team-id-badge">{selectedTeam.nazionale ? 'NAZ' : 'CLB'}</span>
                 </div>

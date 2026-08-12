@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { creaCarriera, squadreTemplate, type EsitoCreazioneCarriera } from '../db';
 import { BOOTSTRAP_STAGIONE_DEFAULT } from '../db/bootstrap';
-import { budgetCarriera, campionatiDisponibili, posizioniInLega, squadreDellaLega } from '../engine';
+import { budgetCarriera, campionatiDisponibili, posizioniInLega, ratingInizialeCompleto, squadreDellaLega } from '../engine';
 import type { Carriera, ObiettivoStagionale, Squadra } from '../types/entities';
 
 const OBIETTIVI: ReadonlyArray<{ valore: ObiettivoStagionale; titolo: string; descrizione: string }> = [
@@ -163,7 +163,7 @@ export default function NuovaCarriera({ onCancel, onComplete }: NuovaCarrieraPro
               <div className="pick-list" role="listbox" aria-label="Squadre del campionato">
                 {squadreLega.map((s) => (
                   <button key={s.id} className="pick-row" type="button" onClick={() => setSquadraId(s.id)}>
-                    <span className="team-row-mark">{s.forza}</span>
+                    <span className="team-row-mark">{ratingInizialeCompleto(s.nome, s.mediaOverall, lega)}</span>
                     <span><strong>{s.nome}</strong><small>media rosa {Math.round(s.mediaOverall ?? 0)} · {budgetCarriera(s, lega, posizioni.get(s.id) ?? 1).toLocaleString('it-IT')} € di budget</small></span>
                     <span className="pick-arrow">→</span>
                   </button>

@@ -8,3 +8,7 @@ export * from './rules';
 export * from './invariants';
 export * from './calendario';
 export * from './carriera';
+export * from './classifica';
+export * from './referto';
+export * from './rating';
+export * from './storico';

@@ -8,7 +8,6 @@ import type {
   Giocatore,
   Squadra,
   SquadAssignment,
-  Forza,
 } from '../types/entities';
 
 export const STAGIONE_DEMO = '2025/26';
@@ -35,7 +34,10 @@ const RUOLI: ReadonlyArray<readonly [ruolo: string, quanti: number]> = [
 
 interface SquadraDemo {
   nome: string;
-  forza: Forza;
+  /** Livello interno 1-5 usato SOLO per generare gli overall della rosa demo */
+  forza: number;
+  /** Rating Elo iniziale (derivato dalla media overall della rosa, vedi engine/rating.ts) */
+  rating: number;
   coefficiente: number;
   budget: number;
   reputazione: number;
@@ -45,12 +47,12 @@ interface SquadraDemo {
 }
 
 const SQUADRE_DEMO: SquadraDemo[] = [
-  { nome: 'FC Meridiana', forza: 4, coefficiente: 45, budget: 15_000_000, reputazione: 70, ombra: false, campionato: 'Serie FLM' },
-  { nome: 'US Levante', forza: 3, coefficiente: 30, budget: 10_000_000, reputazione: 55, ombra: false, campionato: 'Serie FLM' },
-  { nome: 'AC Borgo', forza: 2, coefficiente: 18, budget: 6_000_000, reputazione: 40, ombra: false, campionato: 'Serie FLM' },
-  { nome: 'SS Falco', forza: 1, coefficiente: 8, budget: 3_000_000, reputazione: 25, ombra: false, campionato: 'Serie FLM' },
-  { nome: 'Real Torre', forza: 2, coefficiente: 12, budget: 5_000_000, reputazione: 30, ombra: true },
-  { nome: 'FC Montecchio', forza: 1, coefficiente: 5, budget: 2_000_000, reputazione: 20, ombra: true },
+  { nome: 'FC Meridiana', forza: 4, rating: 1820, coefficiente: 45, budget: 15_000_000, reputazione: 70, ombra: false, campionato: 'Serie FLM' },
+  { nome: 'US Levante', forza: 3, rating: 1700, coefficiente: 30, budget: 10_000_000, reputazione: 55, ombra: false, campionato: 'Serie FLM' },
+  { nome: 'AC Borgo', forza: 2, rating: 1580, coefficiente: 18, budget: 6_000_000, reputazione: 40, ombra: false, campionato: 'Serie FLM' },
+  { nome: 'SS Falco', forza: 1, rating: 1460, coefficiente: 8, budget: 3_000_000, reputazione: 25, ombra: false, campionato: 'Serie FLM' },
+  { nome: 'Real Torre', forza: 2, rating: 1580, coefficiente: 12, budget: 5_000_000, reputazione: 30, ombra: true },
+  { nome: 'FC Montecchio', forza: 1, rating: 1460, coefficiente: 5, budget: 2_000_000, reputazione: 20, ombra: true },
 ];
 
 export interface EsitoSeed {
@@ -62,6 +64,11 @@ export interface EsitoSeed {
   partite: number;
   competizioni: number;
   carriere: number;
+}
+
+/** Livello 1-4 per generare gli overall della rosa demo (inverso di ratingInizialeDaMedia). */
+function livelloDaRating(rating: number): number {
+  return Math.min(4, Math.max(1, Math.round((rating - 1400) / 90)));
 }
 
 function ruoloPerIndice(ji: number): string {
@@ -124,7 +131,8 @@ export async function seedDemo(opzioni: { force?: boolean } = {}): Promise<Esito
       nazione: 'ITA',
       nazionale: false,
       campionato: s.campionato,
-      forza: s.forza,
+      rating: s.rating,
+      ratingInizioStagione: s.rating,
       coefficiente: s.coefficiente,
       budget: s.budget,
       reputazione: s.reputazione,
@@ -136,7 +144,7 @@ export async function seedDemo(opzioni: { force?: boolean } = {}): Promise<Esito
     giocabili.forEach((squadra) => {
       let somma = 0;
       for (let ji = 0; ji < 20; ji++) {
-        const overall = 58 + (squadra.forza - 1) * 6 + ((ji * 7) % 9) - 4;
+        const overall = 58 + (livelloDaRating(squadra.rating) - 1) * 6 + ((ji * 7) % 9) - 4;
         somma += overall;
       }
       mediaPerSquadra.set(squadra.id, somma / 20);
@@ -153,7 +161,7 @@ export async function seedDemo(opzioni: { force?: boolean } = {}): Promise<Esito
       const rosa: Giocatore[] = [];
       for (let ji = 0; ji < 20; ji++) {
         const eta = ji >= 17 ? 17 + (ji % 3) : 17 + ((si * 3 + ji * 5) % 19);
-        const overall = 58 + (squadra.forza - 1) * 6 + ((ji * 7) % 9) - 4;
+        const overall = 58 + (livelloDaRating(squadra.rating) - 1) * 6 + ((ji * 7) % 9) - 4;
         const g: Giocatore = {
           id: newId(),
           pesId: null,

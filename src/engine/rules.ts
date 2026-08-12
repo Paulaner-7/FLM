@@ -22,6 +22,77 @@ export const SOGLIA_MORALE_CRISI = 30;
 /** Soglia di fiducia società sotto cui scatta il rischio esonero (PRD 3.2) */
 export const SOGLIA_FIDUCIA_ESONERO = 25;
 
+// ---------- Simulazione risultati CPU (PRD 3.2: rating Elo + varianza) ----------
+// Calibrati sul calcio reale verificato (regola 6 AGENTS.md):
+// - Media gol per partita nei top campionati europei: Serie A 2024/25 = 973 gol /
+//   380 partite = 2.56 a partita (Wikipedia, stagione completa) → 1.28 per squadra.
+// - Vantaggio casa storico ~0.3-0.5 gol a partita (dataset football-data.co.uk,
+//   medie su decenni di campionati europei) → 0.35 netto, applicato in modo
+//   SIMMETRICO (±0.175): così la media totale resta ancorata a 2.56 (un bonus
+//   solo alla squadra in casa gonfiava la media a ~2.87, calibrazione corretta
+//   con scripts/calibra-sim.ts contro la stagione reale 2024/25).
+// - Scarto dal rating Elo: 1 punto = 1/350 di gol attesi (tarato con
+//   calibra-sim.ts: spread finale ~61 punti vs 64 reali).
+
+/** Gol attesi base per squadra in una partita (metà della media reale ~2.56) */
+export const GOL_MEDIA_SQUADRA = 1.28;
+/** Vantaggio casa NETTO in gol attesi (applicato ±metà in casa/trasferta) */
+export const VANTAGGIO_CASA_GOL = 0.35;
+/** Divisore dello scarto rating → gol attesi (Δ/350) */
+export const DIVISORE_SCARTO_RATING = 350;
+
+// ---------- Forma (momentum settimanale, PRD 3.2: cluster in classifica) ----------
+// Una squadra su una striscia positiva gioca con un bonus di rating effettivo
+// (e viceversa in crisi): crea i cluster tipici dei campionati reali (gruppi che
+// si staccano e si ricompattano). Tarato con calibra-sim.ts: ±10 per risultato
+// consecutivo, cap ±50 (~+1.5 livelli di forza al massimo).
+
+/** Bonus di rating per vittoria/sconfitta consecutiva (0 = disattivo) */
+export const BONUS_FORMA_STREAK = 10;
+/** Cap del bonus forma (positivo e negativo) */
+export const CAP_FORMA_STREAK = 50;
+
+// ---------- Variabilità tra stagioni (calibra-sim.ts, ultimi 10 anni Serie A) ----------
+// Due leve per riprodurre le stagioni reali (campione 82-95, gap 1ª-2ª 1-19,
+// ultima 17-25):
+// 1. SCARTO_STAGIONALE: ogni squadra rende ±40 di rating per stagione (seme
+//    deterministico carriera+stagione+squadra) — modella il "quest'anno rendiamo
+//    più/meno dell'overall" (mercato, allenatore, infortuni).
+// 2. REVERSIONE_DRIFT: dentro la stagione solo metà della deriva Elo conta per
+//    la simulazione (l'altra metà è rumore che rientra): evita le stagioni
+//    irreali da 100+ punti del campione.
+
+/** Scostamento stagionale massimo per squadra (0 = disattivo) */
+export const SCARTO_STAGIONALE = 40;
+/** Frazione della deriva Elo intra-stagione che conta per la sim (1 = tutta) */
+export const REVERSIONE_DRIFT = 0.5;
+
+// ---------- Rating iniziale dallo storico reale (src/engine/storico.ts) ----------
+// La posizione finale si converte in rating: 1500 + (10.5 − pos) × PUNTI_POSIZIONE.
+// Taratura: campione di A ≈ 1671, 20° di A ≈ 1330, campione di B ≈ 1411.
+
+/** Punti Elo per posizione di classifica (18 = spread ~340 tra 1° e 20° di A) */
+export const PUNTI_POSIZIONE_RATING = 18;
+/** Sconto per la seconda divisione (campione di B ≈ 15° di A) */
+export const OFFSET_SECONDA_DIVISIONE = 260;
+/** Peso dello storico nel rating iniziale completo (1 − peso = rosa attuale) */
+export const PESO_RATING_STORICO = 0.5;
+
+// ---------- Referto (PRD 3.3) ----------
+
+/** Minuti stagionali attribuiti a ogni titolare per partita giocata (90', recupero non contato) */
+export const MINUTI_PARTITA = 90;
+/** Settimane di infortunio registrato nel referto (infortunio breve, costante regolabile) */
+export const SETTIMANE_INFORTUNIO = 2;
+/** Bonus forma per prestazione eccezionale registrata nel referto (clamp 0-100) */
+export const BONUS_FORMA_PRESTAZIONE = 10;
+
+// ---------- Classifica (regola Serie A reale, Wikipedia "Serie A" — criteri ufficiali) ----------
+
+export const PUNTI_VITTORIA = 3;
+export const PUNTI_PAREGGIO = 1;
+export const PUNTI_SCONFITTA = 0;
+
 // ---------- Stato iniziale di una nuova carriera (flusso "Nuova Carriera") ----------
 // Fissati con l'utente: fiducia società 70, budget dalla reputazione squadra.
 
