@@ -7,6 +7,37 @@ export type Id = string;
 /** Forza squadra 1-5 (PRD 3.4) */
 export type Forza = 1 | 2 | 3 | 4 | 5;
 
+/** Tipo di competizione (PRD 7.1: un template parametrico, le coppe sono istanze) */
+export type TipoCompetizione =
+  | 'campionato'
+  | 'coppa_nazionale'
+  | 'supercoppa'
+  | 'champions_league'
+  | 'europa_league'
+  | 'conference_league'
+  | 'mondiale'
+  | 'europeo'
+  | 'qualificazioni';
+
+/** Formato del template parametrico (PRD 7.1) */
+export type FormatoCompetizione =
+  | 'girone'
+  | 'eliminazione_diretta'
+  | 'league_phase'
+  | 'gironi_tabellone'
+  | 'partita_secca'
+  | 'andata_ritorno';
+
+/**
+ * Tipo di assegnazione giocatore↔squadra (PRD 7.2).
+ * Il prestito è previsto dal PRD ma la logica completa arriva in M4:
+ * oggi il motore valida e applica solo 'proprieta'.
+ */
+export type TipoAssegnazione = 'proprieta' | 'prestito';
+
+/** Esito di un movimento registrato nel TransferLedger (PRD 7.3: anche le trattative saltate) */
+export type EsitoTrasferimento = 'completato' | 'saltato';
+
 /** Categoria evento — tassonomia FC 26 (PRD 4.2) */
 export type CategoriaEvento = 'giocatore' | 'societa' | 'tifosi_media';
 
@@ -36,24 +67,37 @@ export interface Promessa {
   scadenza: number;
 }
 
-/** PRD 3.4 — Squadra (la tua + avversarie; per le avversarie serve solo nome e forza) */
+/**
+ * PRD 7.2 — Squadra (Team Registry).
+ * La tua + avversarie della lega + squadre ombra (nome, nazione, forza per i sorteggi).
+ */
 export interface Squadra {
   id: Id;
   nome: string;
+  /** Codice o nome nazione (PRD 7.1: le ombre hanno nome, nazione, forza) */
+  nazione: string;
   forza: Forza;
+  /** Coefficiente per sorteggi europei: determina fasce e teste di serie (PRD 7.1) */
+  coefficiente: number;
+  budget: number;
+  reputazione: number;
+  /** true = squadra ombra: esiste solo per la logica dei sorteggi, non giocabile in FL26 (PRD 7.1) */
+  ombra: boolean;
 }
 
 /**
- * PRD 3.4 — Giocatore.
- * `squadraId` implementa il Squad Assignment di 7.2: un giocatore, un club (invariante di integrità).
- * La rosa di una squadra si deriva da qui, non da un array dentro Squadra.
+ * PRD 7.2 — Giocatore (Player Registry).
+ * Anagrafica globale: ogni calciatore esiste una sola volta.
+ * L'appartenenza a una squadra NON è qui: vive in SquadAssignment (invariante 7.2).
  */
 export interface Giocatore {
   id: Id;
-  squadraId: Id;
+  /** Mapping con l'ID PES di FL26 (PRD 7.2): null finché non mappato */
+  pesId: number | null;
   nome: string;
-  ruolo: string;
+  nazionalita: string;
   eta: number;
+  ruolo: string;
   /** Copiato da FL26 all'importazione, aggiornato tra stagioni (PRD 3.4) */
   overall: number;
   /** 0-100 */
@@ -63,10 +107,45 @@ export interface Giocatore {
   minutiStagione: number;
   promesse: Promessa[];
   leader: boolean;
+  /** Flag settore giovanile / vivaio (PRD 3.4) */
+  giovane: boolean;
   /** Settimana fino a cui è infortunato (opzionale) */
   infortunioFinoA?: number;
-  /** Flag settore giovanile / vivaio (PRD 3.4) */
-  giovane?: boolean;
+  /** Valore di mercato: calcolato dall'engine con formula deterministica (PRD 7.3) */
+  valoreMercato: number;
+}
+
+/**
+ * PRD 7.2 — Squad Assignment: collega giocatori e squadre con validità temporale (dal/al).
+ * Garantisce l'invariante "un giocatore = un solo club proprietario" (+ eventuale prestito in M4)
+ * e rende ricostruibile lo storico dei passaggi.
+ */
+export interface SquadAssignment {
+  id: Id;
+  giocatoreId: Id;
+  squadraId: Id;
+  tipo: TipoAssegnazione;
+  /** Stagione di inizio validità, es. "2025/26" */
+  dal: string;
+  /** Stagione di fine validità: assente = assegnazione attiva */
+  al?: string;
+}
+
+/**
+ * PRD 7.1 — Competizione: template parametrico unico.
+ * Campionato, coppe, competizioni UEFA e nazionali sono istanze con parametri diversi.
+ */
+export interface Competizione {
+  id: Id;
+  nome: string;
+  tipo: TipoCompetizione;
+  formato: FormatoCompetizione;
+  /** es. "2025/26" */
+  stagione: string;
+  /** es. "andata", "ritorno", "gironi", "ottavi" */
+  fase: string;
+  /** ID delle squadre partecipanti (Opzione A: lista piatta) */
+  squadre: Id[];
 }
 
 /**
@@ -75,6 +154,8 @@ export interface Giocatore {
  */
 export interface Partita {
   id: Id;
+  competizioneId: Id;
+  /** Numero del turno: giornata per il girone, turno per le coppe */
   giornata: number;
   /** id Squadra */
   casa: Id;
@@ -117,4 +198,22 @@ export interface Evento {
   /** Indice dell'opzione scelta dall'allenatore (vuoto finché non deciso) */
   sceltaFatta?: number;
   effettiApplicati: boolean;
+}
+
+/**
+ * PRD 7.3 — TransferLedger: storico permanente dei movimenti di mercato.
+ * Alimenta narrativa e anti-ripetizione; anche le trattative saltate sono registrate
+ * (sono materiale narrativo a loro volta).
+ */
+export interface TransferLedgerEntry {
+  id: Id;
+  giocatoreId: Id;
+  daSquadraId: Id;
+  aSquadraId: Id;
+  cifra: number;
+  stagione: string;
+  settimana: number;
+  esito: EsitoTrasferimento;
+  /** es. "rosa piena", "budget insufficiente" (per esito 'saltato') */
+  motivo?: string;
 }

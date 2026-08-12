@@ -5,3 +5,4 @@
 // (classifica, morale, fiducia) arrivano con M1/M2.
 
 export * from './rules';
+export * from './invariants';

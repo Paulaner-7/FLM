@@ -26,5 +26,7 @@ Prima di implementare una feature, rileggi la sezione del PRD relativa.
 
 - UI in italiano; identificatori di codice in inglese (camelCase); nomi delle entità come nel PRD.
 - Nessun backend, nessun routing esterno, nessun account: tutto gira nel browser.
+- Il ponte dati con PES Editor (CSV formato editor + report leggibili per il fallback manuale)
+  vive in `src/bridge`: legge da Dexie, non scrive (PRD 7.4).
 - L'LLM non decide mai valori finali: numeri coerenti garantiti dal motore (PRD 3.1).
 - `npm run dev` per avviare l'app; `npm run build` per verificare tipi e build.
