@@ -451,6 +451,8 @@ Il routing dei compiti sui due modelli:
 
 Una nota di cautela onesta: Opencode Go nasce come servizio per agenti di coding  [(opencode.ai)](https://opencode.ai/docs/go/) , non come API generalista per applicazioni — tecnicamente funziona ovunque (è un endpoint OpenAI-compatibile standard), ma tieni il design provider-agnostic come assicurazione: se domani i termini o il catalogo cambiassero, sposti base URL e modello nelle impostazioni e punti a Gemini o DeepSeek diretto in cinque minuti, senza toccare il codice. Questa flessibilità, già raccomandata nella sezione 4.5, con la tua scelta diventa un requisito esplicito del PRD.
 
+**Vincolo CORS (verificato ad agosto 2026)**: Opencode Go non invia header CORS (il preflight OPTIONS risponde 404) — funziona da client server-side (curl, agenti), ma un browser blocca la chiamata diretta. FLM usa quindi un **proxy di sviluppo Vite**: il base URL di default nelle impostazioni è il percorso relativo `/zen/go/v1`, il browser chiama l'app su localhost e Vite inoltra a `https://opencode.ai/zen/go/v1` (vite.config.ts, dev e preview). Nessun backend persistente: il proxy esiste solo nel processo di sviluppo locale. I provider che supportano CORS (OpenAI, Gemini, DeepSeek) si configurano con URL assoluto e chiamata diretta.
+
 ### 7.9 Roadmap aggiornata (v2)
 
 L'ampliamento del perimetro ridisegna la coda della roadmap; il principio resta identico — giocabile presto, valore a ogni passo — ma ora le milestone tengono conto del bootstrap da FL26 e del ponte con l'editor.

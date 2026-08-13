@@ -12,3 +12,5 @@ export * from './classifica';
 export * from './referto';
 export * from './rating';
 export * from './storico';
+export * from './eventi';
+export * from './fallback-events';

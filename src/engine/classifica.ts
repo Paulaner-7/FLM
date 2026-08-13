@@ -150,3 +150,32 @@ export function calcolaClassifica(partite: Partita[], squadreIds: Id[]): RigaCla
     punti: acc.punti,
   }));
 }
+
+/** Esito di una singola partita dal punto di vista di una squadra (V/N/P). */
+export type SegnoForma = 'V' | 'N' | 'P';
+
+/**
+ * Segno di una partita GIÀ giocata per la squadra data: V vittoria, N pareggio,
+ * P sconfitta. Presentazione pura di un risultato esistente (nessun numero nuovo).
+ */
+export function segnoPartita(partita: Partita, squadraId: Id): SegnoForma {
+  const golSquadra = partita.casa === squadraId ? partita.golCasa : partita.golTrasferta;
+  const golAvversario = partita.casa === squadraId ? partita.golTrasferta : partita.golCasa;
+  if (golSquadra > golAvversario) return 'V';
+  if (golSquadra === golAvversario) return 'N';
+  return 'P';
+}
+
+/**
+ * Forma di una squadra: segni delle ultime `max` partite giocate nella
+ * competizione, dalla più recente alla meno recente. Meno di `max` partite
+ * giocate → lista più corta. Pura e deterministica (PRD 3.2, "forma ultime 5").
+ */
+export function formaUltime5(partite: Partita[], squadraId: Id, max = 5): SegnoForma[] {
+  return partite
+    .filter((p) => p.giocata && (p.casa === squadraId || p.trasferta === squadraId))
+    .sort((a, b) => a.giornata - b.giornata)
+    .slice(-max)
+    .reverse()
+    .map((p) => segnoPartita(p, squadraId));
+}

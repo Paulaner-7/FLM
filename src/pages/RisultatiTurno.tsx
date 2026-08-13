@@ -4,7 +4,7 @@
 
 import { useState, type ReactElement } from 'react';
 import { annullaReferto, type EsitoConfermaReferto } from '../db';
-import type { Id, Squadra } from '../types/entities';
+import type { Id, Notizia, Squadra } from '../types/entities';
 
 interface RisultatiTurnoProps {
   carrieraId: string;
@@ -14,6 +14,8 @@ interface RisultatiTurnoProps {
   /** Giornata del turno appena giocato */
   giornata: number;
   competizioneNome: string;
+  /** Notizie del turno: null = generazione in corso, undefined = non richieste */
+  notizie?: Notizia[] | null;
   onTornaIndietro: () => void;
   onDashboard: () => void;
 }
@@ -25,6 +27,7 @@ export default function RisultatiTurno({
   squadre,
   giornata,
   competizioneNome,
+  notizie,
   onTornaIndietro,
   onDashboard,
 }: RisultatiTurnoProps): ReactElement {
@@ -108,6 +111,26 @@ export default function RisultatiTurno({
             </tbody>
           </table>
         </div>
+        {/* Il giornale del giorno dopo (PRD 4.2): notizie del turno */}
+        {notizie !== undefined && (
+          <section className="giornale-sezione" aria-label="Il giornale del giorno dopo">
+            <p className="eyebrow">Il giornale del giorno dopo</p>
+            {notizie === null ? (
+              <div className="giornale-loading" aria-live="polite">
+                <span className="import-status-bar"><span /></span>
+                <span>Il giornale si sta stampando…</span>
+              </div>
+            ) : notizie.length === 0 ? (
+              <div className="giornale-vuoto">Nessuna notizia per questo turno.</div>
+            ) : (
+              <ul className="giornale-lista">
+                {notizie.map((n) => (
+                  <li key={n.id} className="giornale-notizia">{n.testo}</li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
         {errore && <p className="feedback feedback-error">{errore}</p>}
         <div className="referto-actions risultati-actions">
           <button type="button" className="button button-outline" disabled={annullamento} onClick={() => void tornaIndietro()}>

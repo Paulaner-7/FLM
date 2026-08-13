@@ -8,6 +8,8 @@ export { eseguiTrasferimento, registraTrattativaSaltata } from './transfers';
 export type { EsitoEsecuzione } from './transfers';
 export { confermaReferto, annullaReferto, prossimaPartita, rosaDellaCarriera } from './referti';
 export type { EsitoConfermaReferto, InputConfermaReferto } from './referti';
+export { generaContenutiTurno, decidiEvento } from './eventi';
+export type { EsitoGenerazioneContenuti } from './eventi';
 export { setLeader, creaPromessa, decidiRichiestaPromessa, PRESET_PROMESSE, promesseAttive } from './morale';
 export type { PresetPromessa } from './morale';
 export {
@@ -31,3 +33,4 @@ export { importaBootstrapDaDocs, DOCS_CSV, descrizioneProgresso } from './autoim
 export type { AutoImportFase, AutoImportProgress } from './autoimport';
 export { migraNazioniPes } from './nazioni';
 export type { EsitoMigrazioneNazioni } from './nazioni';
+export { IMPOSTAZIONI_LLM_DEFAULT, IMPOSTAZIONI_LLM_ID, impostazioniLlm, llmConfigurato, salvaImpostazioniLlm } from './impostazioni';

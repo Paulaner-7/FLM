@@ -3,6 +3,8 @@
 // sono calcolati SOLO qui, con funzioni pure. L'LLM produce solo testo e proposte.
 // Costanti di bilanciamento centralizzate: si tarano qui dopo una stagione di prova (PRD 6.1).
 
+import type { CategoriaEvento } from '../types/entities';
+
 /** Intervallo degli indicatori di stato (morale, fiducia) 0-100 */
 export const MIN_STATO = 0;
 export const MAX_STATO = 100;
@@ -18,6 +20,57 @@ export const EFFETTO_EVENTO_MAX = 10;
 
 /** Soglia sotto cui lo spogliatoio è in crisi (PRD 3.2, modulo morale) */
 export const SOGLIA_MORALE_CRISI = 30;
+
+// ---------- Motore eventi (PRD 4.2/4.3/4.6) ----------
+// Taratura concordata (revisione): le categorie rare (società, tifosi/media) sono
+// riservate a situazioni estreme e cappate a MAX_EVENTI_RARI_STAGIONE a stagione
+// (nel calcio reale: 2-4 momenti decisivi a stagione, mai rumore settimanale).
+// Frequenza turno ridotta: 40% nessun evento, 50% uno, 10% due.
+
+/** Probabilità di 0 eventi in un turno */
+export const PROB_ZERO_EVENTI = 0.4;
+/** Probabilità di 1 evento in un turno (dopo lo zero) */
+export const PROB_UN_EVENTO = 0.5;
+/** Massimo eventi-decisione per turno */
+export const MAX_EVENTI_TURNO = 2;
+/** Settimane consecutive con 2 eventi oltre cui si forza ≤1 (mai 3 di fila) */
+export const MAX_CONSECUTIVI_DUE_EVENTI = 2;
+/** Cooldown categoria: mai la stessa per più di N turni di fila (PRD 4.3) */
+export const COOLDOWN_CATEGORIA_TURNI = 2;
+/** Pesi di pesca per categoria (giocatore di gran lunga dominante) */
+export const PESO_CATEGORIA_EVENTO: Record<CategoriaEvento, number> = {
+  giocatore: 6,
+  societa: 1,
+  tifosi_media: 1,
+};
+/** Cap stagionale delle categorie rare (società, tifosi/media): mai oltre */
+export const MAX_EVENTI_RARI_STAGIONE = 4;
+/** Sotto questa fiducia la categoria rara "si sblocca" (situazione estrema) */
+export const SOGLIA_FIDUCIA_CATEGORIA_RARA = 50;
+/** Striscia negativa minima per sbloccare i tifosi/media (es. dopo 2 sconfitte) */
+export const STRISCIA_NEGATIVA_CATEGORIA_RARA = 2;
+/** Quota di stagione da cui parte lo sprint finale (fase nel prompt, PRD 4.3) */
+export const QUOTA_SPRINT_FINALE = 0.75;
+/** Soglia Jaccard oltre cui un evento è "troppo simile" all'archivio (PRD 4.2) */
+export const SOGLIA_ANTI_RIPETIZIONE = 0.6;
+/** Finestra di eventi passati confrontata per l'anti-ripetizione (PRD 4.3: 10-15) */
+export const FINESTRA_ANTI_RIPETIZIONE = 15;
+/** Un template fallback non viene ripescato per N settimane (PRD 4.6) */
+export const FALLBACK_NO_RIPETI_SETTIMANE = 5;
+/** Numero massimo di notizie del turno (PRD 4.2: 2-3) */
+export const MAX_NOTIZIE = 3;
+/** Minimo opzioni per evento (PRD 4.2: 2-4; sotto si scarta) */
+export const OPZIONI_EVENTO_MIN = 2;
+/** Massimo opzioni per evento (oltre si tronca) */
+export const OPZIONI_EVENTO_MAX = 4;
+/** Minuti stagionali sotto cui un giocatore è "panchinaro" per i candidati */
+export const MINUTI_PANCHINARO = 270;
+/** Overall minimo perché un giocatore entri nel pool "panchinaro" */
+export const OVERALL_PANCHINARO = 74;
+/** Max settimane di infortunio dichiarabili da un evento narrativo (PRD: effetti piccoli) */
+export const MAX_SETTIMANE_INFORTUNIO_EVENTO = 4;
+/** Settimane di infortunio standard per un evento narrativo senza durata esplicita */
+export const SETTIMANE_INFORTUNIO_EVENTO = 2;
 
 // ---------- Morale & spogliatoio (PRD 2.2, 3.2) ----------
 // Bilanciamento derivato dal modello FM citato nel PRD 2.2 (FootballGPT):
@@ -69,8 +122,56 @@ export const EVENTO_RICHIESTA_SCADENZA_SETTIMANE = 2;
 export const ETA_MIN_LEADER = 26;
 export const NUM_LEADER = 3;
 
-/** Soglia di fiducia società sotto cui scatta il rischio esonero (PRD 3.2) */
-export const SOGLIA_FIDUCIA_ESONERO = 25;
+/** Soglia di fiducia società sotto cui scatta il rischio esonero (PRD 3.2, M2: solo avviso) */
+export const SOGLIA_FIDUCIA_ESONERO = 20;
+
+// ---------- Società, obiettivi & fiducia (PRD 3.2) ----------
+// Bande di attesa dallo scarto di rating Elo (mio − avversario): vincente contro
+// una squadra più forte vale più fiducia che contro una più debole (PRD 3.2).
+// Bilanciamento PRD 6.1 (±5 risultati, ±10 eventi), verificato sul calcio reale:
+// 6 sconfitte di fila da favorito portano la fiducia società da 70 a ~22 (zona
+// esonero: un paio di mesi di disastri a un grande club); 10 vittorie da
+// sfavorito a ~88 (la rimonta di fiducia è lenta).
+
+/** Scarto Elo (mio − avversario) oltre cui la partita è da favorito/sfavorito */
+export const SCARTO_ATTESA_ELO = 100;
+
+/** Δ fiducia società per risultato (chiave = banda di attesa) */
+export const FIDUCIA_SOCIETA_VITTORIA = { sfavorito: 6, equilibrio: 4, favorito: 2 } as const;
+export const FIDUCIA_SOCIETA_PAREGGIO = { sfavorito: 2, equilibrio: 0, favorito: -2 } as const;
+export const FIDUCIA_SOCIETA_SCONFITTA = { sfavorito: -2, equilibrio: -5, favorito: -8 } as const;
+
+/** Δ fiducia tifosi per risultato (chiave = banda di attesa) */
+export const FIDUCIA_TIFOSI_VITTORIA = { sfavorito: 5, equilibrio: 4, favorito: 3 } as const;
+export const FIDUCIA_TIFOSI_PAREGGIO = { sfavorito: 1, equilibrio: 0, favorito: -1 } as const;
+export const FIDUCIA_TIFOSI_SCONFITTA = { sfavorito: -1, equilibrio: -3, favorito: -5 } as const;
+
+// I tifosi sono più sensibili delle società: soffrono di più le sconfitte in casa
+// e le strisce (PRD 3.2). Da 65 iniziale: prima sconfitta in casa vs pari livello
+// → 59; tre sconfitte casalinghe di fila → ~53; sei disastri casalinghi consecutivi
+// → pavimento 0. L'alternanza di risultati tiene la piazza 50-70: volubile ma non isterica.
+
+/** Penale extra per sconfitta in casa (i tifosi soffrono di più al proprio stadio) */
+export const FIDUCIA_TIFOSI_SCONFITTA_CASA = -3;
+/** Malus per striscia di sconfitte: −2 × (n−1), n = sconfitta consecutiva (cap −6) */
+export const FIDUCIA_TIFOSI_STRISCIA_SCONFITTE = -2;
+export const FIDUCIA_TIFOSI_STRISCIA_SCONFITTE_CAP = -6;
+/** Bonus per striscia di vittorie: +1 × (n−2), n = vittoria consecutiva (cap +3) */
+export const FIDUCIA_TIFOSI_STRISCIA_VITTORIE = 1;
+export const FIDUCIA_TIFOSI_STRISCIA_VITTORIE_CAP = 3;
+
+// ---------- Obiettivo stagionale: posizioni target (PRD 3.2) ----------
+// Verificato sul calcio reale: titolo = 1°; zona coppe = 4 posti nelle leghe
+// 16-18 (Champions League 3-4 posti), 6 nelle leghe 20+ (5 Champions + Europa);
+// metà classifica = N/2; salvezza = N−3 (tre retrocessioni, come Serie A e Premier).
+
+export const OBIETTIVO_TITOLO = 1;
+/** Zona coppe per leghe piccole (N ≤ 18) */
+export const OBIETTIVO_COPPE_LEGA_PICCOLA = 4;
+/** Zona coppe per leghe grandi (N ≥ 20) */
+export const OBIETTIVO_COPPE_LEGA_GRANDE = 6;
+/** Retrocessioni per la salvezza (N − 3) */
+export const OBIETTIVO_SALVEZZA_RETROCESSI = 3;
 
 // ---------- Simulazione risultati CPU (PRD 3.2: rating Elo + varianza) ----------
 // Calibrati sul calcio reale verificato (regola 6 AGENTS.md):
@@ -154,6 +255,7 @@ export const FIDUCIA_TIFOSI_INIZIALE = 65;
 export const REPUTAZIONE_ALLENATORE_INIZIALE = 50;
 /** Prima settimana di gioco */
 export const SETTIMANA_INIZIALE = 1;
+
 
 // ---------- Budget iniziale: budget = round(rep³ / 6000) × fattore lega ----------
 // Calibrato sui budget reali delle principali squadre europee (finestra 2025/26):

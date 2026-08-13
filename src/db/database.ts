@@ -16,8 +16,10 @@ import type {
   Competizione,
   StatoClub,
   Evento,
+  Notizia,
   TransferLedgerEntry,
   Carriera,
+  ImpostazioniRecord,
 } from '../types/entities';
 
 export const DB_NAME = 'flm';
@@ -36,7 +38,9 @@ export class FlmDatabase extends Dexie {
   competizioni!: EntityTable<Competizione, 'id'>;
   statoClub!: EntityTable<StatoClub, 'id'>;
   eventi!: EntityTable<Evento, 'id'>;
+  notizie!: EntityTable<Notizia, 'id'>;
   transferLedger!: EntityTable<TransferLedgerEntry, 'id'>;
+  impostazioni!: EntityTable<ImpostazioniRecord, 'id'>;
 
   constructor() {
     super(DB_NAME);
@@ -206,6 +210,37 @@ export class FlmDatabase extends Dexie {
       if (daScrivere.size > 0) {
         await tx.table('giocatori').bulkPut([...daScrivere.values()]);
       }
+    });
+    // v8 (M3): impostazioni globali dell'app (config LLM, PRD 4.5/7.8).
+    // Record unico id 'llm'; assente = LLM disattivo (fallback offline, PRD 4.6).
+    // Schema identico alle versioni precedenti + nuova tabella: nessun upgrade dati.
+    this.version(8).stores({
+      carriere: 'id, squadraId, stagione, createdAt',
+      squadre: 'id, pesId, nome, carrieraId',
+      giocatori: 'id, pesId, ruolo, giovane, carrieraId',
+      squadAssignments: 'id, giocatoreId, squadraId, tipo, carrieraId',
+      partite: 'id, competizioneId, giornata, giocata, carrieraId',
+      competizioni: 'id, tipo, stagione, carrieraId',
+      statoClub: 'id',
+      eventi: 'id, settimana, categoria, tipo, carrieraId',
+      transferLedger: 'id, giocatoreId, aSquadraId, stagione, esito, carrieraId',
+      impostazioni: 'id',
+    });
+    // v9 (M3): motore eventi — archivo notizie del turno (PRD 4.2, "Il giornale
+    // del giorno dopo"). Nuova tabella notizie (id, carrieraId, settimana):
+    // nessun upgrade dati, i campi aggiuntivi di Evento/Partita non sono indicizzati.
+    this.version(9).stores({
+      carriere: 'id, squadraId, stagione, createdAt',
+      squadre: 'id, pesId, nome, carrieraId',
+      giocatori: 'id, pesId, ruolo, giovane, carrieraId',
+      squadAssignments: 'id, giocatoreId, squadraId, tipo, carrieraId',
+      partite: 'id, competizioneId, giornata, giocata, carrieraId',
+      competizioni: 'id, tipo, stagione, carrieraId',
+      statoClub: 'id',
+      eventi: 'id, settimana, categoria, tipo, carrieraId',
+      notizie: 'id, carrieraId, settimana',
+      transferLedger: 'id, giocatoreId, aSquadraId, stagione, esito, carrieraId',
+      impostazioni: 'id',
     });
   }
 }

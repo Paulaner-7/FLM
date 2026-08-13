@@ -259,11 +259,21 @@ export interface Partita {
    * + eventi creati/risolti dal referto: rollback secco in annullaReferto
    * (l'inversione a ritroso sarebbe fragile: la valutazione promesse cambia stato).
    */
+  /** Snapshot morale/fiducia/promesse dei giocatori toccati PRIMA della conferma
+   * + eventi creati/risolti dal referto: rollback secco in annullaReferto
+   * (l'inversione a ritroso sarebbe fragile: la valutazione promesse cambia stato). */
   statoPrima?: {
     giocatori: Record<Id, { morale: number; fiducia: number; promesse: Promessa[] }>;
     eventiCreati: Id[];
     eventiRisolti: Id[];
+    /** Fiducia società/tifosi PRIMA del referto: rollback secco in annullaReferto */
+    clubFiducia?: { fiduciaSocieta: number; fiduciaTifosi: number };
   };
+  /**
+   * Eventi narrativi e notizie generati DOPO la conferma (generazione asincrona
+   * fuori dalla transazione del referto): annullaReferto li cancella da qui.
+   */
+  contenutiGeneratiDopoReferto?: { eventi: Id[]; notizie: Id[] };
 }
 
 /**
@@ -283,6 +293,27 @@ export interface StatoClub {
 }
 
 /**
+ * PRD 7.8 — Impostazioni globali dell'app (config LLM, record unico id 'llm').
+ * Globali, non per-carriera: la chiave API è una credenziale dell'utente.
+ * Record assente = LLM disattivo → il motore usa il fallback offline (PRD 4.6).
+ * La chiave resta in chiaro in IndexedDB (serve in chiaro a fetch; IndexedDB
+ * è locale, non esce mai dal browser) ed è mascherata in UI, mai nei log.
+ */
+export interface ImpostazioniRecord {
+  id: Id;
+  /** Endpoint OpenAI-compatibile, es. https://opencode.ai/zen/go/v1 */
+  baseUrl: string;
+  /** Chiave API (Bearer). Vuota = LLM non configurato. */
+  apiKey: string;
+  /** Modello narrativo (eventi, cronache, dialoghi, stampa) */
+  modelloNarrativo: string;
+  /** Modello visione (screenshot referto / rosa, OCR) */
+  modelloVisione: string;
+  /** Interruttore esplicito: false = offline forzato (PRD 4.6) */
+  llmAttivo: boolean;
+}
+
+/**
  * PRD 3.4 — Evento: archivio permanente (serve anche all'anti-ripetizione dei prompt, PRD 4.3).
  */
 export interface Evento {
@@ -295,6 +326,17 @@ export interface Evento {
   testo: string;
   /** Nomi dei giocatori coinvolti (verificati dal motore contro la rosa, PRD 4.2) */
   giocatoriCoinvolti: string[];
+  /**
+   * Infortunio narrativo dichiarato dall'LLM (effetti_fisici): viene applicato
+   * DAVVERO alla rosa alla creazione dell'evento (infortunioFinoA sui citati).
+   */
+  effettiFisici?: Array<{ giocatore: string; settimane: number }>;
+  /**
+   * Stato PRIMA dell'applicazione dell'infortunio narrativo: rollback secco in
+   * annullaReferto (il giocatore non è nello statoPrima del referto, l'infortunio
+   * narrativo arriva DOPO la transazione di conferma).
+   */
+  infortuniApplicati?: Array<{ giocatoreId: Id; infortunioFinoAPrima?: number }>;
   opzioni: OpzioneEvento[];
   /** Richiesta promessa strutturata (PRD 2.2): l'engine propone, l'utente accetta o rifiuta */
   promessaProposta?: {
@@ -308,6 +350,25 @@ export interface Evento {
   /** Indice dell'opzione scelta dall'allenatore (vuoto finché non deciso) */
   sceltaFatta?: number;
   effettiApplicati: boolean;
+  /** Fonte del contenuto: LLM o fallback offline (PRD 4.6) — serve all'anti-ripetizione */
+  origine?: 'llm' | 'fallback';
+  /** Id del template di fallback usato (anti-ripetizione 5 settimane, PRD 4.6) */
+  templateId?: string;
+}
+
+/**
+ * PRD 4.2 — Notizia di cronaca del turno ("Il giornale del giorno dopo").
+ * Generata dall'LLM insieme agli eventi, o dall'engine dai risultati reali
+ * quando offline. Archivio separato da Evento: non è azionabile e non serve
+ * all'anti-ripetizione dei prompt (il testo della cronaca non torna nel prompt).
+ */
+export interface Notizia {
+  id: Id;
+  carrieraId: string;
+  settimana: number;
+  testo: string;
+  /** Fonte: LLM o template engine dai risultati reali (PRD 4.6) */
+  origine?: 'llm' | 'engine';
 }
 
 /**

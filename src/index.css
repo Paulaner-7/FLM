@@ -135,6 +135,27 @@ h2 { color: var(--paper); font-size: clamp(30px, 4vw, 49px); line-height: 1; mar
 .summary-card strong { color: var(--signal-light); display: block; font-family: Georgia, serif; font-size: 39px; font-weight: 400; }
 .summary-card span { color: var(--paper-muted); display: block; font-size: 11px; letter-spacing: 0.08em; margin-top: 8px; text-transform: uppercase; }
 .summary-detail { border-bottom: 1px solid var(--line); border-top: 1px solid var(--line); color: var(--paper-muted); display: flex; flex-wrap: wrap; font-size: 12px; gap: 24px; padding: 15px 0; }
+
+/* ---------- Società, obiettivi & fiducia (PRD 3.2) ---------- */
+
+.societa-block { margin: 36px 0 4px; }
+.societa-block .crisi-alert { margin-top: 16px; }
+.societa-grid { display: grid; gap: 1px; grid-template-columns: repeat(3, 1fr); margin-top: 18px; }
+.societa-card { background: var(--ink-soft); min-width: 0; padding: 22px 24px; }
+.societa-label { color: var(--paper-muted); display: block; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+.fiducia-bar { background: rgba(233, 230, 220, 0.1); display: block; height: 6px; margin: 16px 0 12px; overflow: hidden; width: 100%; }
+.fiducia-fill { display: block; height: 100%; transition: width 260ms ease; }
+.fiducia-fill-societa { background: var(--signal); }
+.fiducia-fill-tifosi { background: var(--mint); }
+.fiducia-fill-obiettivo { background: var(--paper); }
+.fiducia-numero { color: var(--paper) !important; display: block !important; font-family: Georgia, serif !important; font-size: 30px !important; font-weight: 400 !important; letter-spacing: 0 !important; line-height: 1; margin: 0 !important; text-transform: none !important; }
+.fiducia-numero em { color: var(--paper-muted); font-family: inherit; font-size: 13px; font-style: normal; margin-left: 4px; }
+.fiducia-stima { color: var(--paper-muted); display: block; font-size: 12px; letter-spacing: 0 !important; margin-top: 12px; text-transform: none !important; }
+.fiducia-stima-ok { color: var(--mint); }
+
+@media (max-width: 900px) {
+  .societa-grid { grid-template-columns: 1fr; }
+}
 .result-page .button { margin-top: 34px; }
 
 /* Database browser */
@@ -421,3 +442,64 @@ h2 { color: var(--paper); font-size: clamp(30px, 4vw, 49px); line-height: 1; mar
 .richiesta-azioni { display: flex; gap: 10px; }
 
 .form-error { color: var(--signal-light); font-size: 12px; margin: 18px 0 0; }
+
+/* ---------- Classifica & Calendario (consultazione, PRD 3.2) ---------- */
+
+.topbar-nav { align-items: center; display: flex; gap: 8px; }
+
+.forma-dots { align-items: center; display: inline-flex; gap: 5px; }
+.forma-dot { border-radius: 50%; height: 8px; width: 8px; }
+
+.calendario-list { border-top: 1px solid var(--line); }
+.cal-row { align-items: center; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 14px; min-height: 58px; padding: 10px 12px; }
+.cal-giornata { color: #70828a; font-family: Georgia, serif; font-size: 15px; min-width: 52px; }
+.cal-sede { border: 1px solid #52666e; color: var(--paper-muted); flex-shrink: 0; font-size: 9px; font-weight: 800; letter-spacing: 0.08em; padding: 5px 8px; text-transform: uppercase; }
+.cal-sede-casa { border-color: rgba(156, 201, 181, 0.45); color: var(--mint); }
+.cal-avversario { color: var(--paper); flex: 1; font-size: 14px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-avversario-senza { color: #60737a; font-size: 12px; font-style: italic; }
+.cal-esito { font-family: Georgia, serif; font-size: 18px; font-weight: 400; min-width: 52px; text-align: center; }
+.cal-da-giocare { color: #60737a; font-size: 10px; font-weight: 800; letter-spacing: 0.12em; min-width: 52px; text-align: center; text-transform: uppercase; }
+.cal-corrente { background: rgba(156, 201, 181, 0.05); border-left: 2px solid var(--mint); }
+.cal-corrente .cal-giornata { color: var(--mint); }
+.cal-midweek { align-items: center; border-bottom: 1px solid var(--line); color: #52666e; display: flex; font-size: 9px; gap: 14px; justify-content: center; letter-spacing: 0.16em; min-height: 36px; text-transform: uppercase; }
+.cal-midweek::before, .cal-midweek::after { background: #52666e; content: ""; height: 1px; opacity: 0.45; width: 48px; }
+
+@media (max-width: 640px) {
+  .topbar-nav { gap: 4px; }
+  .topbar-nav .button { padding: 0 9px; }
+}
+
+/* ---------- Impostazioni LLM (PRD 4.5 / 7.8) ---------- */
+
+.settings-page .content-wrap { max-width: 860px; }
+.settings-heading { margin: clamp(40px, 7vw, 84px) 0 clamp(28px, 4vw, 48px); }
+.settings-form { border-top: 1px solid var(--line); padding-top: 8px; }
+.settings-row { align-items: baseline; border-bottom: 1px solid var(--line); display: grid; gap: 8px 28px; grid-template-columns: minmax(150px, 240px) 1fr; padding: 20px 0; }
+.settings-label { color: var(--paper-muted); font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
+.settings-control { min-width: 0; }
+.settings-hint { color: #60737a; font-size: 12px; line-height: 1.5; margin: 8px 0 0; max-width: 520px; }
+.settings-key-wrap { align-items: center; display: flex; gap: 12px; }
+.settings-key-wrap .text-input { flex: 1; }
+.settings-actions { display: flex; flex-wrap: wrap; gap: 14px; padding-top: 28px; }
+
+.switch-label { align-items: center; cursor: pointer; display: inline-flex; gap: 12px; }
+.switch-input { height: 0; opacity: 0; position: absolute; width: 0; }
+.switch-track { background: #2c3f4b; border: 1px solid #52666e; border-radius: 999px; display: inline-block; height: 22px; position: relative; transition: background 180ms ease, border-color 180ms ease; width: 42px; }
+.switch-track::after { background: var(--paper-muted); border-radius: 50%; content: ""; height: 14px; left: 3px; position: absolute; top: 3px; transition: transform 180ms ease, background 180ms ease; width: 14px; }
+.switch-input:checked + .switch-track { background: rgba(217, 105, 67, 0.35); border-color: var(--signal); }
+.switch-input:checked + .switch-track::after { background: var(--signal-light); transform: translateX(20px); }
+.switch-input:focus-visible + .switch-track { outline: 2px solid var(--signal-light); outline-offset: 3px; }
+.switch-copy { color: var(--paper); font-size: 13px; }
+
+.test-result { border-left: 2px solid; margin-top: 26px; padding: 14px 18px; }
+.test-result-ok { border-color: var(--mint); }
+.test-result-error { border-color: var(--danger); }
+.test-result .eyebrow { margin-bottom: 8px; }
+.test-result p { color: var(--paper-muted); font-size: 13px; line-height: 1.6; margin: 4px 0; }
+.test-result p strong { color: var(--paper); }
+.test-risposta { color: var(--paper); font-family: Georgia, serif; font-size: 15px; }
+
+@media (max-width: 640px) {
+  .settings-row { grid-template-columns: 1fr; gap: 10px; }
+  .settings-key-wrap { flex-wrap: wrap; }
+}

@@ -57,4 +57,24 @@ function docsCsvPlugin(): Plugin {
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), docsCsvPlugin()],
+  // Opencode Go non invia header CORS (verificato: preflight 404): in browser
+  // la chiamata diretta è bloccata. Proxy di sviluppo: il client chiama
+  // /zen/go/… sullo stesso origin e Vite inoltra a opencode.ai (PRD 7.8).
+  // I provider con CORS (OpenAI, Gemini, DeepSeek) restano su URL assoluto.
+  server: {
+    proxy: {
+      '/zen/go': {
+        target: 'https://opencode.ai',
+        changeOrigin: true,
+      },
+    },
+  },
+  preview: {
+    proxy: {
+      '/zen/go': {
+        target: 'https://opencode.ai',
+        changeOrigin: true,
+      },
+    },
+  },
 })

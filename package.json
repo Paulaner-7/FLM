@@ -12,6 +12,9 @@
     "verify:leagues": "tsx scripts/verify-leagues.ts",
     "verify:referto": "tsx scripts/verify-referto.ts",
     "verify:morale": "tsx scripts/verify-morale.ts",
+    "verify:societa": "tsx scripts/verify-societa.ts",
+    "verify:llm": "tsx scripts/verify-llm.ts",
+    "verify:eventi": "tsx scripts/verify-eventi.ts",
     "calibra:sim": "tsx scripts/calibra-sim.ts",
     "lint": "oxlint",
     "preview": "vite preview"

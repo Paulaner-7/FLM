@@ -8,6 +8,7 @@ interface HomeProps {
   onNuovaCarriera: () => void;
   onImport: () => void;
   onDatabase: () => void;
+  onImpostazioni: () => void;
   onContinua: (carrieraId: string) => void;
 }
 
@@ -20,7 +21,7 @@ const ETICHETTA_OBIETTIVO: Record<string, string> = {
 
 type AutoImportStato = 'idle' | 'attivo' | 'fatto' | 'errore';
 
-export default function Home({ onNuovaCarriera, onImport, onDatabase, onContinua }: HomeProps): ReactElement {
+export default function Home({ onNuovaCarriera, onImport, onDatabase, onImpostazioni, onContinua }: HomeProps): ReactElement {
   const [carriere, setCarriere] = useState<CarrieraConDettagli[] | null>(null);
   const [databasePronto, setDatabasePronto] = useState(false);
   const [daEliminare, setDaEliminare] = useState<string | null>(null);
@@ -76,6 +77,7 @@ export default function Home({ onNuovaCarriera, onImport, onDatabase, onContinua
           <span className="topbar-note">Football Life Manager · locale-first</span>
           <button className="button button-small" type="button" onClick={onImport}>Importa database</button>
           <button className="button button-small button-outline" type="button" onClick={onDatabase}>Database</button>
+          <button className="button button-small button-outline" type="button" onClick={onImpostazioni}>Impostazioni</button>
         </div>
       </header>
 
