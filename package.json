@@ -7,8 +7,11 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "verify:db": "tsx scripts/verify-db.ts",
+    "verify:autoimport": "tsx scripts/verify-autoimport.ts",
+    "verify:nazioni": "tsx scripts/verify-nazioni.ts",
     "verify:leagues": "tsx scripts/verify-leagues.ts",
     "verify:referto": "tsx scripts/verify-referto.ts",
+    "verify:morale": "tsx scripts/verify-morale.ts",
     "calibra:sim": "tsx scripts/calibra-sim.ts",
     "lint": "oxlint",
     "preview": "vite preview"

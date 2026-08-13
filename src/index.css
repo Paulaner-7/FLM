@@ -106,6 +106,17 @@ h2 { color: var(--paper); font-size: clamp(30px, 4vw, 49px); line-height: 1; mar
 .feedback { font-size: 12px; line-height: 1.5; margin: 18px 0 0; }
 .feedback-ok { color: var(--mint); }
 .feedback-error { color: var(--danger); }
+.import-status { border-left: 2px solid var(--signal); display: grid; gap: 8px; margin: 38px 0 0; padding: 4px 0 4px 18px; }
+.import-status strong { color: var(--paper); font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; }
+.import-status span { color: var(--paper-muted); font-size: 12px; }
+.import-status-bar { background: rgba(217, 105, 67, 0.16); display: block; height: 3px; overflow: hidden; width: 220px; }
+.import-status-bar span { animation: import-pulse 1.4s ease-in-out infinite; background: var(--signal); display: block; height: 100%; width: 45%; }
+.import-status-error { border-left-color: var(--danger); }
+.import-status-error strong { color: var(--danger); }
+.import-status-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+@keyframes import-pulse { 0% { transform: translateX(-100%); } 100% { transform: translateX(320%); } }
+.auto-import-row { align-items: center; display: flex; flex-wrap: wrap; gap: 14px; margin-top: 18px; }
+.auto-import-note { color: var(--paper-muted); font-size: 12px; }
 .issue-box { background: rgba(217, 105, 67, 0.08); border-left: 2px solid var(--signal); color: var(--paper-muted); margin-top: 18px; padding: 15px 18px; }
 .issue-heading { align-items: baseline; display: flex; flex-wrap: wrap; gap: 10px; }
 .issue-heading strong { color: var(--danger); font-size: 12px; }
@@ -362,3 +373,51 @@ h2 { color: var(--paper); font-size: clamp(30px, 4vw, 49px); line-height: 1; mar
   .result-row { align-items: flex-start; flex-direction: column; }
   .result-score { margin-left: 0; }
 }
+
+/* ---------- Morale & spogliatoio (pagina Rosa, PRD 3.2) ---------- */
+
+.morale-bar { background: rgba(233, 230, 220, 0.1); display: block; height: 4px; margin-top: 6px; min-width: 72px; }
+.morale-bar-fill { display: block; height: 100%; transition: width 260ms ease; }
+.stato-numero { color: var(--paper-muted); font-size: 13px; font-weight: 700; }
+
+.rosa-badge-wrap { align-items: center; display: flex; flex-wrap: wrap; gap: 5px; }
+.status-leader { background: rgba(156, 201, 181, 0.14); color: var(--mint); }
+.status-crisi { background: rgba(217, 105, 67, 0.16); color: var(--signal-light); }
+.status-promessa { background: rgba(240, 139, 93, 0.12); color: var(--signal-light); }
+.status-infortunio { background: rgba(174, 185, 183, 0.1); color: var(--paper-muted); }
+.rosa-riga-selezionata { background: rgba(156, 201, 181, 0.05); }
+
+.giocatore-dettaglio { background: var(--ink-soft); margin: 26px 0 40px; padding: clamp(22px, 4vw, 42px); }
+.giocatore-dettaglio-head { align-items: flex-start; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; padding-bottom: 22px; }
+.giocatore-dettaglio-head h2 { margin-bottom: 0; }
+.giocatore-dettaglio-ruoli { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 8px; }
+.giocatore-dettaglio-sezione { border-top: 1px solid var(--line); margin-top: 26px; padding-top: 22px; }
+.giocatore-dettaglio-sezione h3 { color: var(--paper); font-size: 12px; letter-spacing: 0.1em; margin: 0 0 12px; text-transform: uppercase; }
+.giocatore-dettaglio-copy { color: var(--paper-muted); font-size: 13px; line-height: 1.6; margin: 0 0 14px; max-width: 560px; }
+
+.promesse-lista { list-style: none; margin: 0 0 18px; padding: 0; }
+.promesse-lista li { border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; padding: 12px 0; }
+.promessa-riga { align-items: baseline; display: flex; gap: 14px; justify-content: space-between; }
+.promessa-riga strong { color: var(--paper); font-size: 14px; }
+.promessa-scadenza { color: #70828a; font-size: 11px; white-space: nowrap; }
+.promessa-progresso { color: var(--mint); font-size: 12px; }
+.promessa-esito { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.promessa-esito-mantenuta { color: var(--mint); }
+.promessa-esito-tradita { color: var(--signal-light); }
+.promesse-crea { align-items: center; display: flex; flex-wrap: wrap; gap: 10px; }
+.promesse-crea-label { color: var(--paper-muted); font-size: 12px; margin-right: 4px; }
+.promessa-limite { color: var(--signal-light); font-size: 11px; }
+
+.crisi-alert { align-items: center; background: rgba(217, 105, 67, 0.08); border: 1px solid rgba(217, 105, 67, 0.35); display: flex; flex-wrap: wrap; gap: 14px; margin-top: 24px; padding: 14px 18px; }
+.crisi-alert p { color: var(--paper-muted); flex: 1 1 260px; font-size: 13px; margin: 0; min-width: 0; }
+.crisi-alert p strong { color: var(--signal-light); }
+
+.richieste-sezione { margin-top: 40px; }
+.richiesta-card { align-items: center; border: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 18px; justify-content: space-between; padding: 18px 22px; }
+.richiesta-card + .richiesta-card { border-top: 0; }
+.richiesta-card strong { color: var(--paper); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
+.richiesta-card p { color: var(--paper-muted); font-size: 14px; line-height: 1.6; margin: 8px 0 0; max-width: 640px; }
+.richiesta-card small { color: var(--signal-light); display: block; font-size: 11px; margin-top: 6px; }
+.richiesta-azioni { display: flex; gap: 10px; }
+
+.form-error { color: var(--signal-light); font-size: 12px; margin: 18px 0 0; }

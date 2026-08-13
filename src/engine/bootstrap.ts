@@ -5,6 +5,7 @@ import { ratingInizialeDaMedia } from './rating';
 
 export interface ValoriGiocatoreBootstrap {
   morale: number;
+  fiducia: number;
   forma: number;
   minutiStagione: number;
   leader: boolean;
@@ -22,6 +23,7 @@ export interface ProfiloSquadraBootstrap {
 export function valoriGiocatoreBootstrap(eta: number): ValoriGiocatoreBootstrap {
   return {
     morale: 50,
+    fiducia: 50,
     forma: 50,
     minutiStagione: 0,
     leader: false,

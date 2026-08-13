@@ -2,6 +2,7 @@
 // Parsing e persistenza restano in src/db; regole numeriche derivate vivono in src/engine.
 
 import { profiloSquadraBootstrap, valoriGiocatoreBootstrap } from '../engine/bootstrap';
+import { nomeNazione } from '../data/countries';
 import { db } from './database';
 import type { Giocatore, SquadAssignment, Squadra } from '../types/entities';
 
@@ -313,7 +314,7 @@ export async function importaBootstrap(
       id: stablePlayerId(pesId),
       pesId,
       nome: textValue(row, 'Name'),
-      nazionalita: `PES-${textValue(row, 'Country')}`, 
+      nazionalita: nomeNazione(numericValue(row, 'Country')),
       eta,
       ruolo: ruoloDaRiga(row),
       overall: numericValue(row, 'OverallStats'),
@@ -358,10 +359,11 @@ export async function importaBootstrap(
     });
   }
 
+  const giocatorePerId = new Map(giocatori.map((giocatore) => [giocatore.id, giocatore]));
   const giocatoriPerSquadra = new Map<number, Giocatore[]>();
   for (const assegnazione of assegnazioni) {
     const pesTeam = Number(assegnazione.squadraId.replace('pes-team-', ''));
-    const giocatore = giocatori.find((item) => item.id === assegnazione.giocatoreId);
+    const giocatore = giocatorePerId.get(assegnazione.giocatoreId);
     if (!giocatore) continue;
     const rosa = giocatoriPerSquadra.get(pesTeam) ?? [];
     rosa.push(giocatore);
@@ -383,7 +385,7 @@ export async function importaBootstrap(
       id: stableTeamId(pesId),
       pesId,
       nome: textValue(row, 'Name'),
-      nazione: `PES-${textValue(row, 'Country')}`, 
+      nazione: nomeNazione(numericValue(row, 'Country')),
       nazionale: booleanValue(textValue(row, 'National')),
       campionato: league || undefined,
       mediaOverall: mediaOverall ?? undefined,
@@ -395,13 +397,22 @@ export async function importaBootstrap(
 
   const senzaSquadra = giocatori.filter((giocatore) => !assegnato.has(giocatore.pesId ?? -1)).length;
 
+  // Chunk di 2.000 righe: a 27k+ giocatori un bulkAdd unico può far scattare
+  // i limiti di durata transazione di IndexedDB (Safari/Firefox).
+  const CHUNK = 2000;
+  async function bulkAddAChunk<T>(tabella: { bulkAdd: (righe: T[]) => Promise<unknown> }, righe: T[]): Promise<void> {
+    for (let inizio = 0; inizio < righe.length; inizio += CHUNK) {
+      await tabella.bulkAdd(righe.slice(inizio, inizio + CHUNK));
+    }
+  }
+
   await db.transaction('rw', db.squadre, db.giocatori, db.squadAssignments, async () => {
     await db.squadAssignments.clear();
     await db.giocatori.clear();
     await db.squadre.clear();
-    await db.squadre.bulkAdd(squadre);
-    await db.giocatori.bulkAdd(giocatori);
-    await db.squadAssignments.bulkAdd(assegnazioni);
+    await bulkAddAChunk(db.squadre, squadre);
+    await bulkAddAChunk(db.giocatori, giocatori);
+    await bulkAddAChunk(db.squadAssignments, assegnazioni);
   });
 
   return {

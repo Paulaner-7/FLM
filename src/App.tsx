@@ -4,8 +4,9 @@ import Carriera from './pages/Carriera';
 import Database from './pages/Database';
 import Home from './pages/Home';
 import NuovaCarriera from './pages/NuovaCarriera';
+import Rosa from './pages/Rosa';
 
-type View = 'home' | 'bootstrap' | 'database' | 'nuova-carriera' | 'carriera';
+type View = 'home' | 'bootstrap' | 'database' | 'nuova-carriera' | 'carriera' | 'rosa';
 
 export default function App(): ReactElement {
   const [view, setView] = useState<View>('home');
@@ -29,7 +30,10 @@ export default function App(): ReactElement {
     );
   }
   if (view === 'carriera' && carrieraId) {
-    return <Carriera carrieraId={carrieraId} onHome={() => setView('home')} />;
+    return <Carriera carrieraId={carrieraId} onHome={() => setView('home')} onRosa={() => setView('rosa')} />;
+  }
+  if (view === 'rosa' && carrieraId) {
+    return <Rosa carrieraId={carrieraId} onBack={() => setView('carriera')} />;
   }
   return (
     <Home

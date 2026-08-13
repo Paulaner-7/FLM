@@ -5,10 +5,12 @@
 import Dexie, { type EntityTable } from 'dexie';
 
 import { ELO_INIZIALE, ratingInizialeDaMedia } from '../engine/rating';
+import { scegliLeader } from '../engine/morale';
+import { NUM_LEADER } from '../engine/rules';
 
 import type {
-  Squadra,
   Giocatore,
+  Squadra,
   SquadAssignment,
   Partita,
   Competizione,
@@ -147,6 +149,62 @@ export class FlmDatabase extends Dexie {
           ? ratingInizialeDaMedia(s.mediaOverall)
           : (ratingPerForza.get(s.forza ?? -1) ?? ELO_INIZIALE);
         await tx.table('squadre').put({ ...s, rating, ratingInizioStagione: rating, forza: undefined });
+      }
+    });
+    // v7 (M2): morale & spogliatoio — campo fiducia giocatore + Promessa estesa.
+    // Schema identico (fiducia/promesse non indicizzate): upgrade backfill fiducia
+    // a 50, normalizza le promesse al nuovo shape (le vecchie {testo, scadenza}
+    // senza id/tipo/stato non sono valutabili: vengono scartate) e nomina i
+    // leader alle carriere esistenti (il bootstrap li assegna solo alle nuove).
+    this.version(7).stores({
+      carriere: 'id, squadraId, stagione, createdAt',
+      squadre: 'id, pesId, nome, carrieraId',
+      giocatori: 'id, pesId, ruolo, giovane, carrieraId',
+      squadAssignments: 'id, giocatoreId, squadraId, tipo, carrieraId',
+      partite: 'id, competizioneId, giornata, giocata, carrieraId',
+      competizioni: 'id, tipo, stagione, carrieraId',
+      statoClub: 'id',
+      eventi: 'id, settimana, categoria, tipo, carrieraId',
+      transferLedger: 'id, giocatoreId, aSquadraId, stagione, esito, carrieraId',
+    }).upgrade(async (tx) => {
+      const giocatori = await tx.table('giocatori').toArray();
+      // Map per id: un giocatore può avere più modifiche (fiducia + leader)
+      const daScrivere = new Map<string, Record<string, unknown>>();
+      for (const g of giocatori as unknown as Array<{
+        id: string;
+        carrieraId?: string;
+        fiducia?: number;
+        promesse?: Array<{ id?: unknown; tipo?: unknown; stato?: unknown }>;
+      }>) {
+        const promesseValide = (g.promesse ?? []).filter((p) => p.id && p.tipo && p.stato);
+        const mancaFiducia = typeof g.fiducia !== 'number';
+        const promesseCambiate = promesseValide.length !== (g.promesse ?? []).length;
+        if (mancaFiducia || promesseCambiate) {
+          daScrivere.set(g.id, { ...g, fiducia: 50, promesse: promesseValide });
+        }
+      }
+      // Leader alle carriere esistenti: regola engine identica al bootstrap
+      const carriere = await tx.table('carriere').toArray();
+      const assegnazioni = await tx.table('squadAssignments').toArray();
+      for (const carriera of carriere as unknown as Array<{ id: string; squadraId: string }>) {
+        const rosa = (giocatori as unknown as Array<{ id: string; carrieraId?: string; leader: boolean }>)
+          .filter((g) => g.carrieraId === carriera.id)
+          .filter((g) =>
+            assegnazioni.some(
+              (a: { carrieraId?: string; squadraId: string; giocatoreId: string; tipo: string; al?: string }) =>
+                a.carrieraId === carriera.id && a.squadraId === carriera.squadraId && a.giocatoreId === g.id && a.tipo === 'proprieta' && a.al === undefined,
+            ),
+          );
+        if (rosa.length === 0) continue;
+        const leaderIds = new Set(scegliLeader(rosa as unknown as Giocatore[], NUM_LEADER));
+        for (const g of rosa) {
+          if (leaderIds.has(g.id)) {
+            daScrivere.set(g.id, { ...(daScrivere.get(g.id) ?? g), leader: true });
+          }
+        }
+      }
+      if (daScrivere.size > 0) {
+        await tx.table('giocatori').bulkPut([...daScrivere.values()]);
       }
     });
   }

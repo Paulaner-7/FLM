@@ -6,6 +6,8 @@
 import { db, newId } from './database';
 import { generaCalendario } from '../engine/calendario';
 import { budgetCarriera, posizioniInLega, squadreDellaLega, statoClubIniziale } from '../engine/carriera';
+import { scegliLeader } from '../engine/morale';
+import { NUM_LEADER } from '../engine/rules';
 import { ratingInizialeCompleto } from '../engine/storico';
 import type {
   Carriera,
@@ -125,6 +127,9 @@ export async function creaCarriera(input: InputCreazioneCarriera): Promise<Esito
           minutiStagione: 0,
           promesse: [],
           infortunioFinoA: undefined,
+          // Il flag del template (es. seed demo) non vale per la carriera:
+          // i leader si nominano qui sotto con la regola engine (PRD 3.2)
+          leader: false,
         });
       }
 
@@ -136,6 +141,22 @@ export async function creaCarriera(input: InputCreazioneCarriera): Promise<Esito
         }
         return { ...a, id: newId(), carrieraId, giocatoreId, squadraId };
       });
+
+      // Leader di spogliatoio (PRD 3.2): la TUA rosa al bootstrap. Regola
+      // deterministica (engine/morale.ts): veterani età ≥ 26 con overall più alto,
+      // poi riempimento per overall. Il toggle nel dettaglio giocatore permette
+      // di nominare/revocare (vincoli LEADER_MIN/LEADER_MAX in rules.ts).
+      const squadraUtenteId = idPerTemplate.get(squadraTemplateId);
+      if (squadraUtenteId) {
+        const rosaUtente = giocatoriClonati.filter((g) =>
+          assegnazioniClonate.some((a) => a.squadraId === squadraUtenteId && a.giocatoreId === g.id),
+        );
+        const leaderIds = new Set(scegliLeader(rosaUtente, NUM_LEADER));
+        for (let i = 0; i < giocatoriClonati.length; i++) {
+          const g = giocatoriClonati[i];
+          if (g && leaderIds.has(g.id)) giocatoriClonati[i] = { ...g, leader: true };
+        }
+      }
 
       const competizione: Competizione = {
         id: newId(),

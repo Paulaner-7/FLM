@@ -1,8 +1,8 @@
 // FLM — Home: hub dei salvataggi ("una carriera = un salvataggio").
 // UI placeholder: struttura pronta a future modifiche grafiche.
 
-import { useEffect, useState, type ReactElement } from 'react';
-import { eliminaCarriera, listaCarriere, squadreTemplate, type CarrieraConDettagli } from '../db';
+import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
+import { eliminaCarriera, importaBootstrapDaDocs, listaCarriere, squadreTemplate, descrizioneProgresso, type AutoImportProgress, type CarrieraConDettagli } from '../db';
 
 interface HomeProps {
   onNuovaCarriera: () => void;
@@ -18,17 +18,44 @@ const ETICHETTA_OBIETTIVO: Record<string, string> = {
   titolo: 'Titolo',
 };
 
+type AutoImportStato = 'idle' | 'attivo' | 'fatto' | 'errore';
+
 export default function Home({ onNuovaCarriera, onImport, onDatabase, onContinua }: HomeProps): ReactElement {
   const [carriere, setCarriere] = useState<CarrieraConDettagli[] | null>(null);
   const [databasePronto, setDatabasePronto] = useState(false);
   const [daEliminare, setDaEliminare] = useState<string | null>(null);
+  const [autoImportStato, setAutoImportStato] = useState<AutoImportStato>('idle');
+  const [autoImportTesto, setAutoImportTesto] = useState('');
+  const [autoImportErrore, setAutoImportErrore] = useState<string | null>(null);
+  const autoImportAvviato = useRef(false);
 
-  const ricarica = (): void => {
+  const avviaAutoImport = useCallback((): void => {
+    autoImportAvviato.current = true;
+    setAutoImportStato('attivo');
+    setAutoImportErrore(null);
+    void importaBootstrapDaDocs({
+      onProgress: (progresso: AutoImportProgress) => setAutoImportTesto(descrizioneProgresso(progresso)),
+    })
+      .then(() => {
+        setAutoImportStato('fatto');
+        setDatabasePronto(true);
+      })
+      .catch((error: unknown) => {
+        setAutoImportStato('errore');
+        setAutoImportErrore(error instanceof Error ? error.message : 'Importazione automatica fallita');
+      });
+  }, []);
+
+  const ricarica = useCallback((): void => {
     void listaCarriere().then(setCarriere);
-    void squadreTemplate().then((s) => setDatabasePronto(s.length > 0));
-  };
+    void squadreTemplate().then((s) => {
+      const pronto = s.length > 0;
+      setDatabasePronto(pronto);
+      if (!pronto && !autoImportAvviato.current) avviaAutoImport();
+    });
+  }, [avviaAutoImport]);
 
-  useEffect(ricarica, []);
+  useEffect(ricarica, [ricarica]);
 
   const confermaEliminazione = async (): Promise<void> => {
     if (!daEliminare) return;
@@ -60,7 +87,25 @@ export default function Home({ onNuovaCarriera, onImport, onDatabase, onContinua
         <div className="home-actions">
           <button className="button button-primary button-large" type="button" onClick={onNuovaCarriera} disabled={!databasePronto} title={databasePronto ? undefined : 'Importa prima il database FL26'}>Nuova carriera <span>→</span></button>
         </div>
-        {!databasePronto && <p className="feedback">Nessun database importato: vai su “Importa database” per caricare la fotografia FL26, poi crea la prima carriera.</p>}
+        {!databasePronto && autoImportStato === 'idle' && <p className="feedback">Nessun database importato: vai su “Importa database” per caricare la fotografia FL26, poi crea la prima carriera.</p>}
+        {!databasePronto && autoImportStato === 'attivo' && (
+          <div className="import-status" aria-live="polite">
+            <strong>Bootstrap automatico dal tuo FL26 in corso…</strong>
+            <span>{autoImportTesto || 'Preparazione…'}</span>
+            <span className="import-status-bar"><span /></span>
+          </div>
+        )}
+        {autoImportStato === 'fatto' && <p className="feedback feedback-ok">Database FL26 importato automaticamente dai CSV in docs/. Ora puoi creare la prima carriera.</p>}
+        {autoImportStato === 'errore' && (
+          <div className="import-status import-status-error" role="alert">
+            <strong>Bootstrap automatico non riuscito.</strong>
+            <span>{autoImportErrore}</span>
+            <div className="import-status-actions">
+              <button className="button button-small" type="button" onClick={avviaAutoImport}>Riprova</button>
+              <button className="button button-small button-outline" type="button" onClick={onImport}>Importa manualmente</button>
+            </div>
+          </div>
+        )}
 
         <div className="save-section">
           <p className="eyebrow">Salvataggi ({carriere.length})</p>

@@ -3,10 +3,13 @@
 import { useState, type ChangeEvent, type ReactElement } from 'react';
 import {
   BOOTSTRAP_STAGIONE_DEFAULT,
+  descrizioneProgresso,
   importaBootstrap,
+  importaBootstrapDaDocs,
   parseBootstrapFile,
 } from '../db';
 import type {
+  AutoImportProgress,
   BootstrapFileKind,
   BootstrapImportSummary,
   BootstrapInput,
@@ -103,6 +106,7 @@ export default function BootstrapImport({ onCancel, onComplete }: BootstrapImpor
   const [results, setResults] = useState<Partial<Record<BootstrapFileKind, CsvParseResult>>>({});
   const [reading, setReading] = useState<BootstrapFileKind | null>(null);
   const [importing, setImporting] = useState(false);
+  const [autoProgresso, setAutoProgresso] = useState('');
   const [summary, setSummary] = useState<BootstrapImportSummary | null>(null);
   const [fatalError, setFatalError] = useState<string | null>(null);
 
@@ -139,6 +143,26 @@ export default function BootstrapImport({ onCancel, onComplete }: BootstrapImpor
   function goBack(): void {
     if (stepIndex === 0) onCancel();
     else setStepIndex((value) => value - 1);
+  }
+
+  async function runAutoImport(): Promise<void> {
+    if (!season.trim()) {
+      setFatalError('Inserisci stagione bootstrap, per esempio 2025/26.');
+      return;
+    }
+    setImporting(true);
+    setFatalError(null);
+    setAutoProgresso('');
+    try {
+      setSummary(await importaBootstrapDaDocs({
+        stagione: season.trim(),
+        onProgress: (progresso: AutoImportProgress) => setAutoProgresso(descrizioneProgresso(progresso)),
+      }));
+    } catch (error) {
+      setFatalError(error instanceof Error ? error.message : 'Importazione automatica fallita');
+    } finally {
+      setImporting(false);
+    }
   }
 
   async function runImport(): Promise<void> {
@@ -245,6 +269,12 @@ export default function BootstrapImport({ onCancel, onComplete }: BootstrapImpor
             <strong>{reading === current.kind ? 'Lettura in corso…' : 'Scegli file CSV'}</strong>
             <span>oppure trascinalo qui · file locale, nessun upload</span>
           </label>
+          <div className="auto-import-row">
+            <button className="button button-quiet" type="button" disabled={importing} onClick={() => void runAutoImport()}>
+              {importing && autoProgresso ? 'Import automatico in corso…' : 'Carica automaticamente i CSV di docs/'}
+            </button>
+            {autoProgresso && <span className="auto-import-note" aria-live="polite">{autoProgresso}</span>}
+          </div>
           <FileStatus result={currentResult} />
           <Issues result={currentResult} />
 

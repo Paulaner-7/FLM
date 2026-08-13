@@ -6,15 +6,18 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
 import Referto, { type DraftReferto } from './Referto';
 import RisultatiTurno from './RisultatiTurno';
-import { db, rosaDellaCarriera, type EsitoConfermaReferto } from '../db';
+import { db, decidiRichiestaPromessa, promesseAttive, rosaDellaCarriera, type EsitoConfermaReferto } from '../db';
+import { fasciaSpogliatoio, giocatoriInCrisi, moraleSpogliatoio } from '../engine/morale';
+import { PROMESSE_MAX_ATTIVE } from '../engine/rules';
 import { xiDefault } from '../engine/referto';
-import type { Carriera, Competizione, Giocatore, Partita, Squadra, StatoClub } from '../types/entities';
+import type { Carriera, Competizione, Evento, Giocatore, Partita, Squadra, StatoClub } from '../types/entities';
 
 type Vista = 'dashboard' | 'referto' | 'risultati';
 
 interface CarrieraProps {
   carrieraId: string;
   onHome: () => void;
+  onRosa: () => void;
 }
 
 interface DatiCarriera {
@@ -26,6 +29,7 @@ interface DatiCarriera {
   giocatori: Giocatore[];
   prossima: Partita | null;
   avversaria: Squadra | null;
+  eventiPendenti: Evento[];
 }
 
 const DRAFT_VUOTO: Omit<DraftReferto, 'titolari'> = {
@@ -37,7 +41,7 @@ const DRAFT_VUOTO: Omit<DraftReferto, 'titolari'> = {
   espulsi: [],
 };
 
-export default function Carriera({ carrieraId, onHome }: CarrieraProps): ReactElement {
+export default function Carriera({ carrieraId, onHome, onRosa }: CarrieraProps): ReactElement {
   const [dati, setDati] = useState<DatiCarriera | null>(null);
   const [vista, setVista] = useState<Vista>('dashboard');
   const [draft, setDraft] = useState<DraftReferto | null>(null);
@@ -64,6 +68,9 @@ export default function Carriera({ carrieraId, onHome }: CarrieraProps): ReactEl
     const avversaria = prossima
       ? squadre.find((s) => s.id === (prossima.casa === squadra.id ? prossima.trasferta : prossima.casa)) ?? null
       : null;
+    const eventiPendenti = (await db.eventi.where('carrieraId').equals(carrieraId).toArray()).filter(
+      (e) => e.promessaProposta !== undefined && e.sceltaFatta === undefined,
+    );
     setDati({
       carriera,
       squadra,
@@ -73,6 +80,7 @@ export default function Carriera({ carrieraId, onHome }: CarrieraProps): ReactEl
       giocatori: rosa.sort((a, b) => a.ruolo.localeCompare(b.ruolo, 'it') || b.overall - a.overall),
       prossima,
       avversaria,
+      eventiPendenti,
     });
   }, [carrieraId]);
 
@@ -90,8 +98,20 @@ export default function Carriera({ carrieraId, onHome }: CarrieraProps): ReactEl
     return <main className="page-shell loading-page"><p>Caricamento carriera…</p></main>;
   }
 
-  const { carriera, squadra, stato, competizione, squadre, giocatori, prossima, avversaria } = dati;
+  const { carriera, squadra, stato, competizione, squadre, giocatori, prossima, avversaria, eventiPendenti } = dati;
   const inCasa = prossima !== null && prossima.casa === squadra.id;
+  const moraleMedio = moraleSpogliatoio(giocatori);
+  const inCrisi = giocatoriInCrisi(giocatori);
+
+  const decidi = async (evento: Evento, scelta: 0 | 1): Promise<void> => {
+    try {
+      await decidiRichiestaPromessa(evento.id, scelta);
+      await carica();
+    } catch (e) {
+      // La decisione non è andata a buon fine: la richiesta resta in attesa
+      console.error(e);
+    }
+  };
 
   const apriReferto = (): void => {
     if (!prossima) return;
@@ -152,6 +172,7 @@ export default function Carriera({ carrieraId, onHome }: CarrieraProps): ReactEl
         <button className="brand-button" type="button" onClick={onHome}>FLM <span>/ Carriera</span></button>
         <div className="topbar-actions">
           <span className="topbar-note">{carriera.campionato} · {carriera.stagione} · settimana {stato.settimanaCorrente}</span>
+          <button className="button button-outline button-small" type="button" onClick={onRosa}>Rosa</button>
         </div>
       </header>
 
@@ -167,7 +188,48 @@ export default function Carriera({ carrieraId, onHome }: CarrieraProps): ReactEl
           <div className="summary-card"><strong>{stato.fiduciaSocieta}</strong><span>Fiducia società</span></div>
           <div className="summary-card"><strong>{stato.fiduciaTifosi}</strong><span>Fiducia tifosi</span></div>
           <div className="summary-card"><strong>{stato.reputazioneAllenatore}</strong><span>Reputazione mister</span></div>
+          <div className="summary-card"><strong>{moraleMedio}</strong><span>Morale spogliatoio · {fasciaSpogliatoio(moraleMedio)}</span></div>
         </div>
+
+        {inCrisi.length > 0 && (
+          <div className="crisi-alert">
+            <span className="signal-dot" aria-hidden="true" />
+            <p><strong>{inCrisi.length} giocatore{inCrisi.length === 1 ? '' : 'i'} in crisi</strong> (morale sotto 30): {inCrisi.map((g) => g.nome).join(', ')}.</p>
+            <button className="button button-outline button-small" type="button" onClick={onRosa}>Vai alla Rosa</button>
+          </div>
+        )}
+
+        {eventiPendenti.length > 0 && (
+          <div className="richieste-sezione">
+            <p className="eyebrow">Spogliatoio</p>
+            {eventiPendenti.map((e) => {
+              const giocatore = giocatori.find((g) => g.id === e.promessaProposta?.giocatoreId);
+              const pieno = giocatore !== undefined && promesseAttive(giocatore) >= PROMESSE_MAX_ATTIVE;
+              return (
+                <div className="richiesta-card" key={e.id}>
+                  <div>
+                    <strong>{e.titolo}</strong>
+                    <p>{e.testo}</p>
+                    {pieno && <small>Massimo {PROMESSE_MAX_ATTIVE} promesse attive: rifiuta o attendi la scadenza.</small>}
+                  </div>
+                  <div className="richiesta-azioni">
+                    <button
+                      type="button"
+                      className="button button-primary button-small"
+                      disabled={pieno}
+                      onClick={() => void decidi(e, 0)}
+                    >
+                      Prometti
+                    </button>
+                    <button type="button" className="button button-outline button-small" onClick={() => void decidi(e, 1)}>
+                      Rifiuta
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         <div className="next-match">
           {prossima && avversaria ? (

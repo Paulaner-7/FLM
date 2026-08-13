@@ -8,16 +8,27 @@
 // lo stesso turno): rollback totale di tutto. La simulazione è seminata dall'ID
 // partita: rigenerare = stesso risultato.
 
-import { db } from './database';
+import { db, newId } from './database';
 import { calcolaClassifica, type RigaClassifica } from '../engine/classifica';
+import {
+  applicaConseguenze,
+  candidatoRichiestaPromessa,
+  effettiMoraleReferto,
+  testoRichiestaPromessa,
+  valutaPromesseScadute,
+} from '../engine/morale';
 import { aggiornaRating, ELO_INIZIALE } from '../engine/rating';
 import { ratingEffettivo, simulaRisultato, testoNoteReferto } from '../engine/referto';
 import {
   BONUS_FORMA_PRESTAZIONE,
+  EVENTO_RICHIESTA_SCADENZA_SETTIMANE,
+  RICHIESTA_COOLDOWN_SETTIMANE,
+  RIFIUTO_RICHIESTA_FIDUCIA,
+  RIFIUTO_RICHIESTA_MORALE,
   SETTIMANE_INFORTUNIO,
   clamp,
 } from '../engine/rules';
-import type { Giocatore, Id, Partita, Squadra } from '../types/entities';
+import type { Evento, Giocatore, Id, Partita, Squadra } from '../types/entities';
 
 export interface InputConfermaReferto {
   carrieraId: Id;
@@ -96,7 +107,7 @@ function validaInput(
 export async function confermaReferto(input: InputConfermaReferto): Promise<EsitoConfermaReferto> {
   return db.transaction(
     'rw',
-    [db.partite, db.giocatori, db.squadre, db.squadAssignments, db.competizioni, db.statoClub, db.carriere],
+    [db.partite, db.giocatori, db.squadre, db.squadAssignments, db.competizioni, db.statoClub, db.carriere, db.eventi],
     async () => {
       const carriera = await db.carriere.get(input.carrieraId);
       const stato = await db.statoClub.get(input.carrieraId);
@@ -139,6 +150,126 @@ export async function confermaReferto(input: InputConfermaReferto): Promise<Esit
         prestazioni: input.prestazioniEccezionali.map(nome),
       });
 
+      // ---------- Morale (PRD 2.2, 3.2) ----------
+      // 1. Δ morale dal referto: titolari ±5/0 per risultato (+2 flat se marcatore),
+      //    non titolari con promessa 'titolare' attiva −2, infortunati esenti.
+      // 2. Valutazione promesse scadute alla settimana appena giocata (la partita
+      //    della settimana di scadenza conta: titolari già nel referto).
+      // 3. Richieste promessa: sweep rifiuto implicito delle scadute + eventuale
+      //    nuova richiesta (candidato deterministico dall'engine, testo offline).
+      const vittoria = input.golMiei > input.golAvversario;
+      const pareggio = input.golMiei === input.golAvversario;
+      const deltasMorale = effettiMoraleReferto({
+        giocatori: rosa,
+        titolari: input.titolari,
+        marcatori: input.marcatori,
+        vittoria,
+        pareggio,
+        settimana: stato.settimanaCorrente,
+      });
+
+      const partitaCorrente: Partita = {
+        ...partita,
+        golCasa,
+        golTrasferta,
+        giocata: true,
+        titolari: input.titolari,
+      };
+      const partiteSquadra = [
+        ...prossime.filter(
+          (p) => p.giocata && (p.casa === carriera.squadraId || p.trasferta === carriera.squadraId),
+        ),
+        partitaCorrente,
+      ];
+      const valutazione = valutaPromesseScadute(rosa, partiteSquadra, stato.settimanaCorrente);
+
+      const eventiCarriera = await db.eventi.where('carrieraId').equals(input.carrieraId).toArray();
+      // Rifiuto implicito: richiesta non decisa dopo EVENTO_RICHIESTA_SCADENZA_SETTIMANE
+      const eventiRisolti: Id[] = [];
+      const penalitaRifiuto = new Map<Id, { morale: number; fiducia: number }>();
+      for (const e of eventiCarriera) {
+        if (
+          !e.promessaProposta ||
+          e.sceltaFatta !== undefined ||
+          e.settimana + EVENTO_RICHIESTA_SCADENZA_SETTIMANE > stato.settimanaCorrente
+        ) {
+          continue;
+        }
+        eventiRisolti.push(e.id);
+        penalitaRifiuto.set(e.promessaProposta.giocatoreId, {
+          morale: RIFIUTO_RICHIESTA_MORALE,
+          fiducia: RIFIUTO_RICHIESTA_FIDUCIA,
+        });
+        await db.eventi.put({ ...e, sceltaFatta: 1, effettiApplicati: true });
+      }
+
+      const pending = eventiCarriera.some(
+        (e) =>
+          e.promessaProposta &&
+          e.sceltaFatta === undefined &&
+          !eventiRisolti.includes(e.id) &&
+          e.settimana + EVENTO_RICHIESTA_SCADENZA_SETTIMANE > stato.settimanaCorrente,
+      );
+      const richiesteRecenti = new Set(
+        eventiCarriera
+          .filter((e) => e.promessaProposta && e.settimana > stato.settimanaCorrente - RICHIESTA_COOLDOWN_SETTIMANE)
+          .map((e) => e.promessaProposta!.giocatoreId),
+      );
+      const proposta = candidatoRichiestaPromessa({
+        giocatori: rosa,
+        settimana: stato.settimanaCorrente,
+        partiteGiocateSquadra: Math.max(0, partiteSquadra.length - 1),
+        richiesteRecenti,
+        pendingEsistente: pending,
+      });
+      const eventiCreati: Id[] = [];
+      if (proposta) {
+        const nomeGiocatore = giocatori.get(proposta.giocatoreId)?.nome ?? '—';
+        const evento: Evento = {
+          id: newId(),
+          carrieraId: input.carrieraId,
+          settimana: stato.settimanaCorrente,
+          categoria: 'giocatore',
+          tipo: 'scenario_emergente',
+          titolo: 'Richiesta di colloquio',
+          testo: testoRichiestaPromessa(nomeGiocatore, proposta.tipo),
+          giocatoriCoinvolti: [nomeGiocatore],
+          opzioni: [
+            {
+              testo: 'Prometti',
+              effettiProposti: { moraleGiocatori: 0, fiduciaSocieta: 0, fiduciaTifosi: 0, reputazione: 0 },
+            },
+            {
+              testo: 'Rifiuta',
+              effettiProposti: {
+                moraleGiocatori: RIFIUTO_RICHIESTA_MORALE,
+                fiduciaSocieta: 0,
+                fiduciaTifosi: 0,
+                reputazione: 0,
+              },
+            },
+          ],
+          promessaProposta: proposta,
+          effettiApplicati: false,
+        };
+        eventiCreati.push(evento.id);
+        await db.eventi.add(evento);
+      }
+
+      // Snapshot PRIMA di ogni modifica (rollback secco in annullaReferto)
+      const toccati = new Set<Id>([
+        ...deltasMorale.keys(),
+        ...valutazione.conseguenze.keys(),
+        ...penalitaRifiuto.keys(),
+      ]);
+      const statoPrima: NonNullable<Partita['statoPrima']> = { giocatori: {}, eventiCreati, eventiRisolti };
+      for (const id of toccati) {
+        const g = giocatori.get(id);
+        if (g) {
+          statoPrima.giocatori[id] = { morale: g.morale, fiducia: g.fiducia, promesse: g.promesse };
+        }
+      }
+
       // Accumula TUTTI gli effetti per giocatore in un unico oggetto
       // (un giocatore può essere insieme titolare e in nota: no sovrascritture).
       const daAggiornare = new Map<Id, Giocatore>();
@@ -155,6 +286,18 @@ export async function confermaReferto(input: InputConfermaReferto): Promise<Esit
       for (const id of input.infortunati) {
         tocca(id, (g) => ({ ...g, infortunioFinoA: stato.settimanaCorrente + SETTIMANE_INFORTUNIO }));
       }
+      for (const [id, delta] of deltasMorale) {
+        tocca(id, (g) => ({ ...g, morale: clamp(g.morale + delta) }));
+      }
+      for (const [id, promesse] of new Map(valutazione.giocatori.map((g) => [g.id, g.promesse]))) {
+        tocca(id, (g) => ({ ...g, promesse }));
+      }
+      for (const [id, conseg] of valutazione.conseguenze) {
+        tocca(id, (g) => applicaConseguenze(g, conseg));
+      }
+      for (const [id, conseg] of penalitaRifiuto) {
+        tocca(id, (g) => applicaConseguenze(g, conseg));
+      }
       if (daAggiornare.size > 0) {
         await db.giocatori.bulkPut([...daAggiornare.values()]);
       }
@@ -170,6 +313,7 @@ export async function confermaReferto(input: InputConfermaReferto): Promise<Esit
         prestazioniEccezionali: input.prestazioniEccezionali,
         infortunati: input.infortunati,
         espulsi: input.espulsi,
+        statoPrima,
       };
       await db.partite.put(partitaSalvata);
 
@@ -242,7 +386,7 @@ export async function confermaReferto(input: InputConfermaReferto): Promise<Esit
 export async function annullaReferto(input: { carrieraId: Id; partitaId: Id }): Promise<void> {
   await db.transaction(
     'rw',
-    [db.partite, db.giocatori, db.statoClub, db.squadre],
+    [db.partite, db.giocatori, db.statoClub, db.squadre, db.eventi],
     async () => {
       const stato = await db.statoClub.get(input.carrieraId);
       const partita = await db.partite.get(input.partitaId);
@@ -252,6 +396,9 @@ export async function annullaReferto(input: { carrieraId: Id; partitaId: Id }): 
       if (partita.giornata !== stato.settimanaCorrente - 1) {
         throw new Error('Referto ormai storia: annullabile solo entro lo stesso turno');
       }
+
+      // Snapshot morale/fiducia/promesse: ripristino secco (rollback del referto)
+      const statoPrima = partita.statoPrima;
 
       // Rollback minuti/forma/infortuni (dai campi strutturati della partita).
       // Accumulo per giocatore: un titolare con prestazione eccezionale non deve
@@ -276,7 +423,24 @@ export async function annullaReferto(input: { carrieraId: Id; partitaId: Id }): 
           g.infortunioFinoA === sogliaInfortunio ? { ...g, infortunioFinoA: undefined } : g,
         );
       }
+      // Ripristino morale/fiducia/promesse dallo snapshot (se presente)
+      if (statoPrima) {
+        for (const [id, s] of Object.entries(statoPrima.giocatori)) {
+          tocca(id, (g) => ({ ...g, morale: s.morale, fiducia: s.fiducia, promesse: s.promesse }));
+        }
+      }
       if (daRipristinare.size > 0) await db.giocatori.bulkPut([...daRipristinare.values()]);
+
+      // Rollback eventi del referto: cancella le richieste create, riapri le risolte
+      if (statoPrima) {
+        if (statoPrima.eventiCreati.length > 0) {
+          await db.eventi.bulkDelete(statoPrima.eventiCreati);
+        }
+        for (const id of statoPrima.eventiRisolti) {
+          const e = await db.eventi.get(id);
+          if (e) await db.eventi.put({ ...e, sceltaFatta: undefined, effettiApplicati: false });
+        }
+      }
 
       // Rollback partita utente
       await db.partite.put({
@@ -291,6 +455,7 @@ export async function annullaReferto(input: { carrieraId: Id; partitaId: Id }): 
         infortunati: undefined,
         espulsi: undefined,
         ratingPrima: undefined,
+        statoPrima: undefined,
       });
 
       // Rollback risultati CPU del turno + rating Elo (da ratingPrima)

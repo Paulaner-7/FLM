@@ -26,6 +26,8 @@ export interface ContestoGenerazione {
   posizioneClassifica: number;
   ultimePartite: string[];
   giocatoriMoraleBasso: string[];
+  /** Morale medio pesato dello spogliatoio (engine/morale.ts), 0-100 */
+  moraleSpogliatoio?: number;
   promesseInScadenza: string[];
   fiduciaSocieta: number;
   /** Ultimi 10-15 eventi già usati, per l'anti-ripetizione (PRD 4.3) */

@@ -19,6 +19,56 @@ export const EFFETTO_EVENTO_MAX = 10;
 /** Soglia sotto cui lo spogliatoio è in crisi (PRD 3.2, modulo morale) */
 export const SOGLIA_MORALE_CRISI = 30;
 
+// ---------- Morale & spogliatoio (PRD 2.2, 3.2) ----------
+// Bilanciamento derivato dal modello FM citato nel PRD 2.2 (FootballGPT):
+// - morale settimanale ±5 (PRD 6.1: intervalli suggeriti) → 4-5 sconfitte di fila
+//   da 50 = zona crisi: un mese e mezzo di disastri, realistico.
+// - promessa tradita "distrugge fiducia e morale in pochi mesi": colpo duro su
+//   fiducia (−12), moderato su morale (−6). Due tradite da 50 = 26: zona sfiducia.
+// - mantenuta ricostruisce piano: ~8 promesse mantenute per 50→100 (una stagione).
+// - rifiuto onesto costa poco (−2/−3): tradimento molto più di un no secco.
+
+/** Malus per non titolare con promessa 'titolare' attiva (PRD 2.2: peso delle parole) */
+export const PANCHINA_PROMESSO_MORALE = -2;
+/** Bonus marcatore: FLAT se ≥1 gol, cumula con l'effetto risultato (no per-gol) */
+export const BONUS_MARCATORE_MORALE = 2;
+/** Promessa mantenuta */
+export const PROMESSA_MANTENUTA_MORALE = 4;
+export const PROMESSA_MANTENUTA_FIDUCIA = 6;
+/** Promessa tradita */
+export const PROMESSA_TRADITA_MORALE = -6;
+export const PROMESSA_TRADITA_FIDUCIA = -12;
+/** Rifiuto di una richiesta promessa (colloquio onesto) */
+export const RIFIUTO_RICHIESTA_MORALE = -2;
+export const RIFIUTO_RICHIESTA_FIDUCIA = -3;
+/** Peso dei leader nella media spogliatoio (PRD 3.2: "effetto amplificato") */
+export const LEADER_PESO_MORALE = 1.5;
+/** Vincoli numero leader nello spogliatoio */
+export const LEADER_MIN = 2;
+export const LEADER_MAX = 3;
+/** Fasce del morale spogliatoio (indicatore UI) */
+export const FASCIA_SPOGLIATOIO_SERENO = 60;
+export const FASCIA_SPOGLIATOIO_CRISI = 40;
+/** Massimo promesse ATTIVE per giocatore (anti-spam) */
+export const PROMESSE_MAX_ATTIVE = 2;
+/** Preset promesse manuali (dettaglio giocatore) */
+export const PROMESSA_PRESET_TITOLARE_SOGLIA = 50; // % presenze da titolare
+/** Minuti richiesti per la promessa 'minuti' (5 turni × 90' = 450: una da titolare sì) */
+export const PROMESSA_PRESET_MINUTI_SOGLIA = 450;
+/** Durata standard di una promessa (turni) */
+export const PROMESSA_DURATA_DEFAULT = 5;
+/** Richieste dei giocatori (engine sceglie il candidato, LLM scrive il testo in M3) */
+export const OVERALL_MIN_RICHIESTA = 75;
+export const OVERALL_TITOLARE_RICHIESTA = 78;
+/** Minuti attesi = partite giocate × 90 × fattore: sotto → candidato */
+export const MINUTI_ATTESI_FATTORE_RICHIESTA = 0.6;
+export const RICHIESTA_COOLDOWN_SETTIMANE = 8;
+/** Un evento richiesta non deciso dopo N settimane = rifiuto implicito */
+export const EVENTO_RICHIESTA_SCADENZA_SETTIMANE = 2;
+/** Leader al bootstrap carriera (capitano + senatori: età e status, calcio reale) */
+export const ETA_MIN_LEADER = 26;
+export const NUM_LEADER = 3;
+
 /** Soglia di fiducia società sotto cui scatta il rischio esonero (PRD 3.2) */
 export const SOGLIA_FIDUCIA_ESONERO = 25;
 

@@ -171,6 +171,7 @@ export async function seedDemo(opzioni: { force?: boolean } = {}): Promise<Esito
           ruolo: ruoloPerIndice(ji),
           overall,
           morale: 55 + ((si * 2 + ji * 3) % 31),
+          fiducia: 50,
           forma: 50 + ((si * 4 + ji * 7) % 36),
           minutiStagione: 0,
           promesse: [],

@@ -8,6 +8,8 @@ export { eseguiTrasferimento, registraTrattativaSaltata } from './transfers';
 export type { EsitoEsecuzione } from './transfers';
 export { confermaReferto, annullaReferto, prossimaPartita, rosaDellaCarriera } from './referti';
 export type { EsitoConfermaReferto, InputConfermaReferto } from './referti';
+export { setLeader, creaPromessa, decidiRichiestaPromessa, PRESET_PROMESSE, promesseAttive } from './morale';
+export type { PresetPromessa } from './morale';
 export {
   BOOTSTRAP_STAGIONE_DEFAULT,
   CSV_SEPARATORE,
@@ -25,3 +27,7 @@ export type {
 } from './bootstrap';
 export { seedDemo, STAGIONE_DEMO } from './seed';
 export type { EsitoSeed } from './seed';
+export { importaBootstrapDaDocs, DOCS_CSV, descrizioneProgresso } from './autoimport';
+export type { AutoImportFase, AutoImportProgress } from './autoimport';
+export { migraNazioniPes } from './nazioni';
+export type { EsitoMigrazioneNazioni } from './nazioni';

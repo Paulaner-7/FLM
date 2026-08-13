@@ -107,7 +107,7 @@ export function legaPerSquadra(squadra: Squadra): string {
   if (squadra.campionato) return squadra.campionato;
   const curata = legaCurataPerNome(squadra.nome);
   if (curata) return curata;
-  return `Paese ${squadra.nazione}`;
+  return `Squadre di ${squadra.nazione}`;
 }
 
 /** Campionati disponibili nel registro (template, non copie di carriera), con le loro squadre. */
@@ -135,7 +135,7 @@ export interface CampionatiDisponibili {
  * Liga Profesional, J1 League e Saudi Pro League) con roster completo in FL26
  * (src/data/leagues.ts). Sono escluse: le leghe con poche squadre in FL26 (Polonia,
  * Svizzera, Austria, ecc.), la Russian Premier League, i campionati extra-europei
- * minori, le squadre ombra e i gruppi fallback per nazione ("Paese PES-XXX").
+ * minori, le squadre ombra e i gruppi fallback per nazione ("Squadre di …").
  *
  * Eccezione esplicita: in stato demo (nessun CSV importato — tutte le squadre senza
  * PES ID) la lega demo del seed resta selezionabile per provare l'app.

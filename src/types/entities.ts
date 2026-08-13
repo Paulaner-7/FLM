@@ -90,11 +90,25 @@ export interface OpzioneEvento {
   effettiProposti: EffettiProposti;
 }
 
-/** Promessa fatta a un giocatore (PRD 2.2, modulo morale) */
+/** Tipo di promessa (PRD 2.2, modulo morale): valutazione automatica a scadenza. */
+export type TipoPromessa = 'titolare' | 'minuti' | 'coppa';
+
+/** Esito della valutazione a scadenza (binario: soglia è soglia). */
+export type StatoPromessa = 'attiva' | 'mantenuta' | 'tradita';
+
+/** Promessa fatta a un giocatore (PRD 2.2, modulo morale). */
 export interface Promessa {
+  id: Id;
+  tipo: TipoPromessa;
+  /** Etichetta leggibile, es. "Sarai titolare" */
   testo: string;
-  /** Settimana di scadenza della promessa */
+  /** Settimana di creazione */
+  creata: number;
+  /** Settimana di scadenza: valutazione al referto che la supera (quella conta) */
   scadenza: number;
+  /** Soglia misurabile: % presenze da titolare (titolare) o minuti totali (minuti) */
+  soglia: number;
+  stato: StatoPromessa;
 }
 
 /**
@@ -156,6 +170,8 @@ export interface Giocatore {
   overall: number;
   /** 0-100 */
   morale: number;
+  /** 0-100 — credito verso l'allenatore: scala lenta, mossa SOLO dalle promesse (PRD 2.2) */
+  fiducia: number;
   /** 0-100 */
   forma: number;
   minutiStagione: number;
@@ -238,6 +254,16 @@ export interface Partita {
   espulsi?: Id[];
   /** Rating Elo delle due squadre PRIMA della partita: serve al rollback del referto */
   ratingPrima?: { casa: number; trasferta: number };
+  /**
+   * Snapshot morale/fiducia/promesse dei giocatori toccati PRIMA della conferma
+   * + eventi creati/risolti dal referto: rollback secco in annullaReferto
+   * (l'inversione a ritroso sarebbe fragile: la valutazione promesse cambia stato).
+   */
+  statoPrima?: {
+    giocatori: Record<Id, { morale: number; fiducia: number; promesse: Promessa[] }>;
+    eventiCreati: Id[];
+    eventiRisolti: Id[];
+  };
 }
 
 /**
@@ -270,6 +296,15 @@ export interface Evento {
   /** Nomi dei giocatori coinvolti (verificati dal motore contro la rosa, PRD 4.2) */
   giocatoriCoinvolti: string[];
   opzioni: OpzioneEvento[];
+  /** Richiesta promessa strutturata (PRD 2.2): l'engine propone, l'utente accetta o rifiuta */
+  promessaProposta?: {
+    giocatoreId: Id;
+    tipo: TipoPromessa;
+    /** Soglia: % presenze (titolare) o minuti (minuti) */
+    soglia: number;
+    /** Durata in turni: scadenza = settimana della richiesta + durata */
+    durataTurni: number;
+  };
   /** Indice dell'opzione scelta dall'allenatore (vuoto finché non deciso) */
   sceltaFatta?: number;
   effettiApplicati: boolean;
