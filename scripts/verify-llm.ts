@@ -41,8 +41,8 @@ const wireValido: PropostaEventiWire = {
       testo: 'Marco Rossi chiede più minuti e un chiarimento sullo spogliatoio.',
       giocatori_coinvolti: ['Marco Rossi'],
       opzioni: [
-        { testo: 'Prometti titolarità', effetti_proposti: { morale_giocatori: 8, fiducia_societa: 0, fiducia_tifosi: -2, reputazione: 1 } },
-        { testo: 'Rifiuta e chiudi', effetti_proposti: { morale_giocatori: -6, fiducia_societa: 0, fiducia_tifosi: 0, reputazione: 0 } },
+        { testo: 'Prometti titolarità', effetti_proposti: { morale_giocatori: 8, fiducia_giocatori: 4, fiducia_societa: 0, fiducia_tifosi: -2, reputazione: 1 } },
+        { testo: 'Rifiuta e chiudi', effetti_proposti: { morale_giocatori: -6, fiducia_giocatori: -3, fiducia_societa: 0, fiducia_tifosi: 0, reputazione: 0 } },
       ],
     },
   ],
@@ -109,7 +109,7 @@ async function main(): Promise<void> {
   check('valida: tipo fuori enum', !validaPropostaEventiWire({ ...wireValido, eventi: [{ ...wireValido.eventi[0]!, tipo: 'crisi' }] }));
   check('valida: effetti non interi', !validaPropostaEventiWire({
     ...wireValido,
-    eventi: [{ ...wireValido.eventi[0]!, opzioni: [{ testo: 'x', effetti_proposti: { morale_giocatori: 1.5, fiducia_societa: 0, fiducia_tifosi: 0, reputazione: 0 } }] }],
+    eventi: [{ ...wireValido.eventi[0]!, opzioni: [{ testo: 'x', effetti_proposti: { morale_giocatori: 1.5, fiducia_giocatori: 0, fiducia_societa: 0, fiducia_tifosi: 0, reputazione: 0 } }] }],
   }));
   check('valida: opzioni vuote', !validaPropostaEventiWire({ ...wireValido, eventi: [{ ...wireValido.eventi[0]!, opzioni: [] }] }));
   check('valida: notizie non stringhe', !validaPropostaEventiWire({ ...wireValido, notizie: ['ok', 42] }));

@@ -6,6 +6,7 @@ import Dexie, { type EntityTable } from 'dexie';
 
 import { ELO_INIZIALE, ratingInizialeDaMedia } from '../engine/rating';
 import { scegliLeader } from '../engine/morale';
+import { ingaggioDaValore, nuovaScadenzaContratto } from '../engine/mercato';
 import { NUM_LEADER } from '../engine/rules';
 
 import type {
@@ -17,9 +18,15 @@ import type {
   StatoClub,
   Evento,
   Notizia,
+  MondoNotizia,
+  PrestazionePartita,
   TransferLedgerEntry,
   Carriera,
   ImpostazioniRecord,
+  Trattativa,
+  VoceStoricoStagione,
+  OffertaPanchina,
+  MediaRecord,
 } from '../types/entities';
 
 export const DB_NAME = 'flm';
@@ -39,8 +46,14 @@ export class FlmDatabase extends Dexie {
   statoClub!: EntityTable<StatoClub, 'id'>;
   eventi!: EntityTable<Evento, 'id'>;
   notizie!: EntityTable<Notizia, 'id'>;
+  prestazioni!: EntityTable<PrestazionePartita, 'id'>;
   transferLedger!: EntityTable<TransferLedgerEntry, 'id'>;
+  trattative!: EntityTable<Trattativa, 'id'>;
+  storicoStagioni!: EntityTable<VoceStoricoStagione, 'id'>;
+  offerte!: EntityTable<OffertaPanchina, 'id'>;
   impostazioni!: EntityTable<ImpostazioniRecord, 'id'>;
+  media!: EntityTable<MediaRecord, 'id'>;
+  mondoNotizie!: EntityTable<MondoNotizia, 'id'>;
 
   constructor() {
     super(DB_NAME);
@@ -242,6 +255,144 @@ export class FlmDatabase extends Dexie {
       transferLedger: 'id, giocatoreId, aSquadraId, stagione, esito, carrieraId',
       impostazioni: 'id',
     });
+    // v10 (M4): motore competizioni multi-torneo (PRD 7.1).
+    // Nuova tabella prestazioni (eventi giocatore); backfill dei campi
+    // settimana/slot/fase/neutra sulle partite delle carriere esistenti
+    // (restano solo-campionato: le nuove competizioni valgono per le nuove carriere).
+    this.version(10)
+      .stores({
+        carriere: 'id, squadraId, stagione, createdAt',
+        squadre: 'id, pesId, nome, carrieraId',
+        giocatori: 'id, pesId, ruolo, giovane, carrieraId',
+        squadAssignments: 'id, giocatoreId, squadraId, tipo, carrieraId',
+        partite: 'id, competizioneId, giornata, giocata, carrieraId, settimana, slot, fase',
+        competizioni: 'id, tipo, stagione, carrieraId',
+        statoClub: 'id',
+        eventi: 'id, settimana, categoria, tipo, carrieraId',
+        notizie: 'id, carrieraId, settimana',
+        prestazioni: 'id, carrieraId, partitaId, competizioneId, squadraId, giocatoreId',
+        transferLedger: 'id, giocatoreId, aSquadraId, stagione, esito, carrieraId',
+        impostazioni: 'id',
+      })
+      .upgrade(async (tx) => {
+        const partite = await tx.table('partite').toArray();
+        type VecchiaPartita = { id: string; carrieraId: string; competizioneId: string; giornata: number; settimana?: number; slot?: string; fase?: string; neutra?: boolean };
+        for (const p of partite as unknown as VecchiaPartita[]) {
+          if (typeof p.settimana === 'number') continue;
+          const meta = Math.max(1, Math.round((p.giornata ?? 1) / 2));
+          await tx.table('partite').put({
+            ...p,
+            settimana: p.giornata ?? 1,
+            slot: 'weekend',
+            fase: p.giornata <= meta ? 'andata' : 'ritorno',
+            neutra: false,
+          });
+        }
+      });
+    // v11 (M4): mercato — tabella trattative, campi contratto su giocatori,
+    // giornoMercato su StatoClub, giornoMercato nel ledger, letta sugli eventi.
+    // Upgrade: backfill contratti deterministici sui giocatori esistenti e
+    // giornoMercato=0 (nessuna finestra attiva) sugli StatiClub esistenti.
+    this.version(11)
+      .stores({
+        carriere: 'id, squadraId, stagione, createdAt',
+        squadre: 'id, pesId, nome, carrieraId',
+        giocatori: 'id, pesId, ruolo, giovane, carrieraId',
+        squadAssignments: 'id, giocatoreId, squadraId, tipo, carrieraId',
+        partite: 'id, competizioneId, giornata, giocata, carrieraId, settimana, slot, fase',
+        competizioni: 'id, tipo, stagione, carrieraId',
+        statoClub: 'id',
+        eventi: 'id, settimana, categoria, tipo, carrieraId',
+        notizie: 'id, carrieraId, settimana',
+        prestazioni: 'id, carrieraId, partitaId, competizioneId, squadraId, giocatoreId',
+        transferLedger: 'id, giocatoreId, aSquadraId, stagione, esito, carrieraId',
+        trattative: 'id, carrieraId, giocatoreId, stato',
+        impostazioni: 'id',
+      })
+      .upgrade(async (tx) => {
+        const giocatori = await tx.table('giocatori').toArray();
+        const daScrivere: unknown[] = [];
+        const stagioneCorrente = '2026/27';
+        for (const g of giocatori as unknown as Array<{ id: string; scadenzaContratto?: string; ingaggioAnnuo?: number; valoreMercato: number; eta: number }>) {
+          if (typeof g.scadenzaContratto === 'string' && typeof g.ingaggioAnnuo === 'number') continue;
+          const anni = 2 + Math.abs(g.eta % 3);
+          const scadenza = nuovaScadenzaContratto(stagioneCorrente, anni);
+          const ingaggio = ingaggioDaValore(g.valoreMercato ?? 0);
+          daScrivere.push({ ...g, scadenzaContratto: scadenza, ingaggioAnnuo: ingaggio });
+        }
+        if (daScrivere.length > 0) await tx.table('giocatori').bulkPut(daScrivere);
+        const stati = await tx.table('statoClub').toArray();
+        for (const s of stati as unknown as Array<{ id: string; giornoMercato?: number }>) {
+          if (typeof s.giornoMercato !== 'number') {
+            await tx.table('statoClub').put({ ...s, giornoMercato: 0 });
+          }
+        }
+      });
+    // v12: carriera lunga — storico stagionale, offerte panchina (PRD 7.7).
+    // Nuove tabelle storicoStagioni, offerte; schema identico v11 + i campi
+    // aggiuntivi su Carriera/StatoClub/Impostazioni non sono indicizzati.
+    this.version(12)
+      .stores({
+        carriere: 'id, squadraId, stagione, createdAt',
+        squadre: 'id, pesId, nome, carrieraId',
+        giocatori: 'id, pesId, ruolo, giovane, carrieraId',
+        squadAssignments: 'id, giocatoreId, squadraId, tipo, carrieraId',
+        partite: 'id, competizioneId, giornata, giocata, carrieraId, settimana, slot, fase',
+        competizioni: 'id, tipo, stagione, carrieraId',
+        statoClub: 'id',
+        eventi: 'id, settimana, categoria, tipo, carrieraId',
+        notizie: 'id, carrieraId, settimana',
+        prestazioni: 'id, carrieraId, partitaId, competizioneId, squadraId, giocatoreId',
+        transferLedger: 'id, giocatoreId, aSquadraId, stagione, esito, carrieraId',
+        trattative: 'id, carrieraId, giocatoreId, stato',
+        storicoStagioni: 'id, carrieraId, stagione',
+        offerte: 'id, carrieraId, stagione, stato',
+        impostazioni: 'id',
+      });
+    // v13 (UI): cache media — mapping nome→URL per loghi squadre, volti
+    // giocatori e loghi competizione (provider esterno, src/media).
+    // Nuova tabella media: nessun upgrade dati.
+    this.version(13)
+      .stores({
+        carriere: 'id, squadraId, stagione, createdAt',
+        squadre: 'id, pesId, nome, carrieraId',
+        giocatori: 'id, pesId, ruolo, giovane, carrieraId',
+        squadAssignments: 'id, giocatoreId, squadraId, tipo, carrieraId',
+        partite: 'id, competizioneId, giornata, giocata, carrieraId, settimana, slot, fase',
+        competizioni: 'id, tipo, stagione, carrieraId',
+        statoClub: 'id',
+        eventi: 'id, settimana, categoria, tipo, carrieraId',
+        notizie: 'id, carrieraId, settimana',
+        prestazioni: 'id, carrieraId, partitaId, competizioneId, squadraId, giocatoreId',
+        transferLedger: 'id, giocatoreId, aSquadraId, stagione, esito, carrieraId',
+        trattative: 'id, carrieraId, giocatoreId, stato',
+        storicoStagioni: 'id, carrieraId, stagione',
+        offerte: 'id, carrieraId, stagione, stato',
+        impostazioni: 'id',
+        media: 'id, tipo, chiave',
+      });
+    // v14: world news — notizie dal mondo (fuori dalla tua squadra), X-style.
+    // Nuova tabella mondoNotizie: nessun upgrade dati.
+    this.version(14)
+      .stores({
+        carriere: 'id, squadraId, stagione, createdAt',
+        squadre: 'id, pesId, nome, carrieraId',
+        giocatori: 'id, pesId, ruolo, giovane, carrieraId',
+        squadAssignments: 'id, giocatoreId, squadraId, tipo, carrieraId',
+        partite: 'id, competizioneId, giornata, giocata, carrieraId, settimana, slot, fase',
+        competizioni: 'id, tipo, stagione, carrieraId',
+        statoClub: 'id',
+        eventi: 'id, settimana, categoria, tipo, carrieraId',
+        notizie: 'id, carrieraId, settimana',
+        prestazioni: 'id, carrieraId, partitaId, competizioneId, squadraId, giocatoreId',
+        transferLedger: 'id, giocatoreId, aSquadraId, stagione, esito, carrieraId',
+        trattative: 'id, carrieraId, giocatoreId, stato',
+        storicoStagioni: 'id, carrieraId, stagione',
+        offerte: 'id, carrieraId, stagione, stato',
+        impostazioni: 'id',
+        media: 'id, tipo, chiave',
+        mondoNotizie: 'id, carrieraId, settimana, categoria',
+      });
   }
 }
 

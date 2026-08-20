@@ -90,6 +90,7 @@ export function statoClubIniziale(
     budget: budgetCarriera(squadra, campionato, posizione),
     reputazioneAllenatore: REPUTAZIONE_ALLENATORE_INIZIALE,
     settimanaCorrente: SETTIMANA_INIZIALE,
+    giornoMercato: 0,
   };
 }
 

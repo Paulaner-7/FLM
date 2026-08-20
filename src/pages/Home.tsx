@@ -2,7 +2,7 @@
 // UI placeholder: struttura pronta a future modifiche grafiche.
 
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
-import { eliminaCarriera, importaBootstrapDaDocs, listaCarriere, squadreTemplate, descrizioneProgresso, type AutoImportProgress, type CarrieraConDettagli } from '../db';
+import { eliminaCarriera, importaBootstrapDaDocs, listaCarriere, squadreTemplate, descrizioneProgresso, impostazioniLlm, type AutoImportProgress, type CarrieraConDettagli } from '../db';
 
 interface HomeProps {
   onNuovaCarriera: () => void;
@@ -28,6 +28,7 @@ export default function Home({ onNuovaCarriera, onImport, onDatabase, onImpostaz
   const [autoImportStato, setAutoImportStato] = useState<AutoImportStato>('idle');
   const [autoImportTesto, setAutoImportTesto] = useState('');
   const [autoImportErrore, setAutoImportErrore] = useState<string | null>(null);
+  const [backupWarning, setBackupWarning] = useState<string | null>(null);
   const autoImportAvviato = useRef(false);
 
   const avviaAutoImport = useCallback((): void => {
@@ -58,6 +59,21 @@ export default function Home({ onNuovaCarriera, onImport, onDatabase, onImpostaz
 
   useEffect(ricarica, [ricarica]);
 
+  // Backup warning: controlla ultimoBackupAt
+  useEffect(() => {
+    void (async () => {
+      const imp = await impostazioniLlm();
+      if (imp.ultimoBackupAt) {
+        const giorni = Math.floor((Date.now() - imp.ultimoBackupAt) / 86400000);
+        if (giorni >= 7) {
+          setBackupWarning(`Ultimo backup: ${giorni} giorni fa. Esporta il salvataggio per sicurezza.`);
+        }
+      } else {
+        setBackupWarning('Nessun backup effettuato ancora. Esporta il salvataggio per sicurezza.');
+      }
+    })();
+  }, []);
+
   const confermaEliminazione = async (): Promise<void> => {
     if (!daEliminare) return;
     await eliminaCarriera(daEliminare);
@@ -85,6 +101,12 @@ export default function Home({ onNuovaCarriera, onImport, onDatabase, onImpostaz
         <div className="home-kicker"><span className="signal-dot" /> Le tue carriere, i tuoi salvataggi</div>
         <h1>Il gioco si gioca.<br /><em>La carriera si costruisce.</em></h1>
         <p className="home-lead">Ogni carriera è un salvataggio indipendente: mondo, calendario e stato separati. Parti dalla fotografia reale del tuo FL26.</p>
+
+        {backupWarning && (
+          <div className="feedback feedback-warning" role="alert">
+            ⚠️ {backupWarning}
+          </div>
+        )}
 
         <div className="home-actions">
           <button className="button button-primary button-large" type="button" onClick={onNuovaCarriera} disabled={!databasePronto} title={databasePronto ? undefined : 'Importa prima il database FL26'}>Nuova carriera <span>→</span></button>

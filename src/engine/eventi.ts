@@ -460,7 +460,8 @@ export interface EsitoApplicazioneEvento {
 
 /**
  * Applica gli effetti dell'opzione scelta:
- * - moraleGiocatori → SOLO ai giocatori citati nell'evento (nessun citato = scartato)
+ * - moraleGiocatori / fiduciaGiocatori → SOLO ai giocatori citati nell'evento
+ *   (nessun citato = scartato; fiducia per giocatore, PRD 7.4)
  * - fiduciaSocieta / fiduciaTifosi / reputazione → StatoClub (clamp 0-100)
  * Funzione PURE: ritorna nuovi oggetti, non muta gli input.
  */
@@ -477,7 +478,11 @@ export function applicaEffettiEvento(
   const citati = new Set(evento.giocatoriCoinvolti.map(normalizzaNome));
   const daAggiornare = giocatori
     .filter((g) => citati.has(normalizzaNome(g.nome)))
-    .map((g) => ({ ...g, morale: clamp(g.morale + effetti.moraleGiocatori) }));
+    .map((g) => ({
+      ...g,
+      morale: clamp(g.morale + effetti.moraleGiocatori),
+      fiducia: clamp(g.fiducia + effetti.fiduciaGiocatori),
+    }));
 
   return {
     giocatori: daAggiornare.length > 0

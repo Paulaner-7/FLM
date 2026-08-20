@@ -1,30 +1,33 @@
-// FLM — Vista carriera: hub del game loop settimanale (PRD 3.3).
-// Tre viste: dashboard (prossima partita + stato club) → Referto → RisultatiTurno.
-// Il draft del referto vive qui: sopravvive a conferma e annullo ("torna indietro"
-// riapre il referto già compilato) e muore solo uscendo dalla dashboard.
+// FLM — Vista carriera: hub del game loop settimanale (PRD 3.3), UI broadcast.
+// Tre viste: dashboard bento (match card + status + decisioni + tile vivi)
+// → Referto (takeover) → RisultatiTurno. La navigazione è il tile hub (D3);
+// azioni secondarie nel kebab della topbar (D11). Accento = colore club (D8).
 
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
 import Referto, { type DraftReferto } from './Referto';
 import RisultatiTurno from './RisultatiTurno';
-import { db, decidiEvento, decidiRichiestaPromessa, generaContenutiTurno, promesseAttive, rosaDellaCarriera, type EsitoConfermaReferto } from '../db';
+import { db, risolviFineStagione, generaContenutiTurno, generaMondoContenutiTurno, assicuratiMondoNotizie, prossimaPartita, rosaDellaCarriera, type EsitoRisoluzione, type EsitoConfermaReferto } from '../db';
 import { calcolaClassifica, type RigaClassifica } from '../engine/classifica';
 import { fasciaSpogliatoio, giocatoriInCrisi, moraleSpogliatoio } from '../engine/morale';
-import { PROMESSE_MAX_ATTIVE, SOGLIA_FIDUCIA_ESONERO } from '../engine/rules';
+import { SOGLIA_FIDUCIA_ESONERO } from '../engine/rules';
 import { xiDefault } from '../engine/referto';
 import { posizioneTarget, progressoObiettivo, stimaFineStagione } from '../engine/societa';
-import type { Carriera, Competizione, Evento, Giocatore, Notizia, ObiettivoStagionale, Partita, Squadra, StatoClub } from '../types/entities';
+import HubTopbar from '../components/hub/HubTopbar';
+import MatchCard from '../components/hub/MatchCard';
+import WorldNewsBoard from '../components/hub/WorldNewsBoard';
+import TileGrid, { type TileDef } from '../components/hub/TileGrid';
+import AlertStrip, { type Alerta } from '../components/hub/AlertStrip';
+import { useEntrataHub } from '../components/hub/useEntrataHub';
+import { accentiDaColori } from '../components/hub/accento';
+
+import styles from './Carriera.module.css';
+import type { Carriera, Competizione, Evento, Giocatore, MondoNotizia, Notizia, ObiettivoStagionale, Partita, Squadra, StatoClub } from '../types/entities';
 
 const ETICHETTA_OBIETTIVO: Record<ObiettivoStagionale, string> = {
   salvezza: 'Salvezza',
   meta_classifica: 'Metà classifica',
   coppe: 'Coppe',
   titolo: 'Titolo',
-};
-
-const ETICHETTA_CATEGORIA: Record<Evento['categoria'], string> = {
-  giocatore: 'Giocatore',
-  societa: 'Società',
-  tifosi_media: 'Tifosi & media',
 };
 
 type Vista = 'dashboard' | 'referto' | 'risultati';
@@ -35,6 +38,20 @@ interface CarrieraProps {
   onRosa: () => void;
   onClassifica: () => void;
   onCalendario: () => void;
+  onCompetizioni: () => void;
+  onMercato: () => void;
+  onMail: () => void;
+  onVivaio: () => void;
+  onNazionale: () => void;
+  onFineStagione: (esito: EsitoRisoluzione) => void;
+  onStorico: () => void;
+}
+
+interface ImpegnoVivo {
+  avversarioNome: string;
+  inCasa: boolean;
+  competizioneNome: string;
+  settimana: number;
 }
 
 interface DatiCarriera {
@@ -42,6 +59,9 @@ interface DatiCarriera {
   squadra: Squadra;
   stato: StatoClub;
   competizione: Competizione;
+  competizioniAttive: string[];
+  campionatoId: string;
+  campionatoNome: string;
   squadre: Map<string, Squadra>;
   giocatori: Giocatore[];
   prossima: Partita | null;
@@ -50,6 +70,11 @@ interface DatiCarriera {
   classifica: RigaClassifica[];
   rigaMia: RigaClassifica | undefined;
   giornateTotali: number;
+  matchdayProssima: number;
+  prossimiImpegni: ImpegnoVivo[];
+  mailDaLeggere: number;
+  trattativeAttive: number;
+  giovaniInVivaio: number;
 }
 
 const DRAFT_VUOTO: Omit<DraftReferto, 'titolari'> = {
@@ -57,53 +82,82 @@ const DRAFT_VUOTO: Omit<DraftReferto, 'titolari'> = {
   golAvversario: 0,
   marcatori: [],
   infortunati: [],
-  prestazioniEccezionali: [],
   espulsi: [],
+  autogolAvversari: 0,
+  supplementari: false,
 };
 
-export default function Carriera({ carrieraId, onHome, onRosa, onClassifica, onCalendario }: CarrieraProps): ReactElement {
+export default function Carriera({ carrieraId, onHome, onRosa, onClassifica, onCalendario, onCompetizioni, onMercato, onMail, onVivaio, onNazionale, onFineStagione, onStorico }: CarrieraProps): ReactElement {
   const [dati, setDati] = useState<DatiCarriera | null>(null);
   const [vista, setVista] = useState<Vista>('dashboard');
   const [draft, setDraft] = useState<DraftReferto | null>(null);
   const [esito, setEsito] = useState<EsitoConfermaReferto | null>(null);
   const [versioneDraft, setVersioneDraft] = useState(0);
-  /** Notizie del turno: null = generazione in corso (il giornale si sta stampando) */
   const [notizie, setNotizie] = useState<Notizia[] | null>(null);
+  const [mondoNotizie, setMondoNotizie] = useState<MondoNotizia[] | null>(null);
 
   const carica = useCallback(async (): Promise<void> => {
-    const [carriera, squadre, stato, competizioni, partite] = await Promise.all([
+    const [carriera, squadre, stato, competizioni, partite, eventiTutti, trattative] = await Promise.all([
       db.carriere.get(carrieraId),
       db.squadre.toArray(),
       db.statoClub.get(carrieraId),
       db.competizioni.toArray(),
       db.partite.toArray(),
+      db.eventi.where('carrieraId').equals(carrieraId).toArray(),
+      db.trattative.where('carrieraId').equals(carrieraId).toArray(),
     ]);
     if (!carriera || !stato) return;
     const squadra = squadre.find((s) => s.id === carriera.squadraId);
     if (!squadra) return;
-    const competizione = competizioni.find((c) => c.carrieraId === carrieraId && c.tipo === 'campionato');
-    if (!competizione) return;
+    const campionato =
+      competizioni.find((c) => c.carrieraId === carrieraId && c.tipo === 'campionato' && c.squadre.includes(squadra.id))
+      ?? competizioni.find((c) => c.carrieraId === carrieraId && c.tipo === 'campionato');
+    if (!campionato) return;
     const rosa = await rosaDellaCarriera(carrieraId, squadra.id);
-    const prossima = partite
-      .filter((p) => p.competizioneId === competizione.id && !p.giocata && (p.casa === squadra.id || p.trasferta === squadra.id))
-      .sort((a, b) => a.giornata - b.giornata)[0] ?? null;
+    const prossima = await prossimaPartita(carrieraId, squadra.id);
+    const competizione = prossima
+      ? competizioni.find((c) => c.id === prossima.competizioneId) ?? campionato
+      : campionato;
     const avversaria = prossima
       ? squadre.find((s) => s.id === (prossima.casa === squadra.id ? prossima.trasferta : prossima.casa)) ?? null
       : null;
-    const eventiPendenti = (await db.eventi.where('carrieraId').equals(carrieraId).toArray()).filter(
-      (e) => e.sceltaFatta === undefined,
-    );
+    const eventiPendenti = eventiTutti.filter((e) => e.sceltaFatta === undefined);
     const partiteCampionato = partite.filter((p) => p.competizioneId === competizione.id);
     const classifica = calcolaClassifica(partiteCampionato, competizione.squadre);
     const rigaMia = classifica.find((r) => r.squadraId === squadra.id);
     const giornateTotali = partiteCampionato.filter(
       (p) => p.casa === squadra.id || p.trasferta === squadra.id,
     ).length;
+    const matchdayProssima = prossima
+      ? partite
+          .filter(
+            (p) => p.carrieraId === carrieraId && p.competizioneId === prossima.competizioneId
+              && (p.casa === squadra.id || p.trasferta === squadra.id),
+          )
+          .sort((a, b) => a.settimana - b.settimana || a.slot.localeCompare(b.slot) || a.giornata - b.giornata || a.id.localeCompare(b.id))
+          .findIndex((p) => p.id === prossima.id) + 1
+      : 0;
+
+    const nomeCompetizione = new Map(competizioni.filter((c) => c.carrieraId === carrieraId).map((c) => [c.id, c.nome]));
+    const prossimiImpegni: ImpegnoVivo[] = partite
+      .filter((p) => p.carrieraId === carrieraId && !p.giocata && (p.casa === squadra.id || p.trasferta === squadra.id))
+      .sort((a, b) => a.settimana - b.settimana || a.slot.localeCompare(b.slot) || a.giornata - b.giornata)
+      .slice(0, 3)
+      .map((p) => ({
+        avversarioNome: squadre.find((s) => s.id === (p.casa === squadra.id ? p.trasferta : p.casa))?.nome ?? '—',
+        inCasa: p.casa === squadra.id,
+        competizioneNome: nomeCompetizione.get(p.competizioneId) ?? '',
+        settimana: p.settimana,
+      }));
+
     setDati({
       carriera,
       squadra,
       stato,
       competizione,
+      competizioniAttive: [...new Set(competizioni.filter((c) => c.carrieraId === carrieraId).map((c) => c.nome))],
+      campionatoId: campionato.id,
+      campionatoNome: campionato.nome,
       squadre: new Map(squadre.map((s) => [s.id, s])),
       giocatori: rosa.sort((a, b) => a.ruolo.localeCompare(b.ruolo, 'it') || b.overall - a.overall),
       prossima,
@@ -112,62 +166,76 @@ export default function Carriera({ carrieraId, onHome, onRosa, onClassifica, onC
       classifica,
       rigaMia,
       giornateTotali,
+      matchdayProssima,
+      prossimiImpegni,
+      mailDaLeggere: eventiTutti.filter((e) => e.letta !== true).length,
+      trattativeAttive: trattative.filter((t) => t.stato === 'proposta' || t.stato === 'trattativa' || t.stato === 'accordo').length,
+      giovaniInVivaio: rosa.filter((g) => g.giovane).length,
     });
+    // Mondo news non blocca il caricamento principale (ex loading infinito se LLM lento/fallisce)
+    void assicuratiMondoNotizie(carrieraId)
+      .then(setMondoNotizie)
+      .catch((e) => {
+        console.error('mondo news load fail', e);
+        setMondoNotizie([]);
+      });
   }, [carrieraId]);
 
   useEffect(() => {
     let alive = true;
-    void carica().then(() => {
-      if (alive) setVista('dashboard');
-    });
+    void carica()
+      .then(() => {
+        if (alive) setVista('dashboard');
+      })
+      .catch((e) => {
+        console.error('carica carriera fail', e);
+        // sblocca comunque per evitare loading infinito — dati potrebbe esser già null
+        if (alive) setVista('dashboard');
+      });
     return () => {
       alive = false;
     };
   }, [carica]);
 
+  const primario = dati?.squadra.colori?.primario;
+  const secondario = dati?.squadra.colori?.secondario;
+  useEffect(() => {
+    const root = document.documentElement;
+    const { accent, accentStrong, onAccent } = accentiDaColori(
+      primario && secondario ? { primario, secondario } : undefined,
+    );
+    root.style.setProperty('--accent', accent);
+    root.style.setProperty('--accent-strong', accentStrong);
+    root.style.setProperty('--on-accent', onAccent);
+    return () => {
+      root.style.removeProperty('--accent');
+      root.style.removeProperty('--accent-strong');
+      root.style.removeProperty('--on-accent');
+    };
+  }, [primario, secondario]);
+
+  useEntrataHub(dati !== null && vista === 'dashboard');
+
   if (!dati) {
     return <main className="page-shell loading-page"><p>Caricamento carriera…</p></main>;
   }
 
-  const { carriera, squadra, stato, competizione, squadre, giocatori, prossima, avversaria, eventiPendenti, classifica, rigaMia, giornateTotali } = dati;
-  const inCasa = prossima !== null && prossima.casa === squadra.id;
+  const { carriera, squadra, stato, competizione, giocatori, prossima, avversaria, eventiPendenti, classifica, rigaMia, giornateTotali, matchdayProssima } = dati;
   const moraleMedio = moraleSpogliatoio(giocatori);
   const inCrisi = giocatoriInCrisi(giocatori);
   const nSquadre = competizione.squadre.length;
-  const targetObiettivo = posizioneTarget(carriera.obiettivo, nSquadre);
   const progresso = progressoObiettivo({
     posizione: rigaMia?.posizione ?? nSquadre,
     giocate: rigaMia?.giocate ?? 0,
     obiettivo: carriera.obiettivo,
     nSquadre,
   });
-  const stima = stimaFineStagione({
-    squadraId: squadra.id,
-    classifica,
-    giornateTotali,
-    obiettivo: carriera.obiettivo,
-    nSquadre,
-  });
+  // targetObiettivo / stima non mostrati (sottotesto rimosso su richiesta)
+  void posizioneTarget;
+  void stimaFineStagione;
+  void giornateTotali;
+  void classifica;
   const panchinaARischio = stato.fiduciaSocieta < SOGLIA_FIDUCIA_ESONERO;
-
-  const decidi = async (evento: Evento, scelta: 0 | 1): Promise<void> => {
-    try {
-      await decidiRichiestaPromessa(evento.id, scelta);
-      await carica();
-    } catch (e) {
-      // La decisione non è andata a buon fine: la richiesta resta in attesa
-      console.error(e);
-    }
-  };
-
-  const decidiNarrativo = async (evento: Evento, scelta: number): Promise<void> => {
-    try {
-      await decidiEvento(evento.id, scelta);
-      await carica();
-    } catch (e) {
-      console.error(e);
-    }
-  };
 
   const apriReferto = (): void => {
     if (!prossima) return;
@@ -191,11 +259,12 @@ export default function Carriera({ carrieraId, onHome, onRosa, onClassifica, onC
           setEsito(e);
           setNotizie(null);
           setVista('risultati');
-          // Generazione contenuti in background (PRD 4.2/4.6): mai dentro la
-          // transazione del referto. Se il referto viene annullato nel frattempo,
-          // la guardia interna scarta tutto (niente eventi orfani).
           void generaContenutiTurno({ carrieraId, partitaId: e.partita.id }).then((esitoGen) => {
             if (!esitoGen.scartata) setNotizie(esitoGen.notizie);
+          });
+          // World news: genera per la settimana appena chiusa (non blocca UI)
+          void generaMondoContenutiTurno({ carrieraId, settimana: e.partita.settimana }).then((batch) => {
+            if (batch.length) setMondoNotizie((prev) => [...batch, ...(prev ?? [])].slice(0, 12));
           });
         }}
         onAnnulla={() => setVista('dashboard')}
@@ -209,17 +278,10 @@ export default function Carriera({ carrieraId, onHome, onRosa, onClassifica, onC
         carrieraId={carrieraId}
         esito={esito}
         squadraId={squadra.id}
-        squadre={squadre}
-        giornata={prossima?.giornata ?? 1}
-        competizioneNome={competizione.nome}
+        squadre={dati.squadre}
+        campionatoId={dati.campionatoId}
+        campionatoNome={dati.campionatoNome}
         notizie={notizie}
-        onTornaIndietro={() => {
-          setNotizie(null);
-          void carica().then(() => {
-            setVista('referto');
-            setVersioneDraft((v) => v + 1);
-          });
-        }}
         onDashboard={() => {
           void carica().then(() => {
             setDraft(null);
@@ -227,167 +289,204 @@ export default function Carriera({ carrieraId, onHome, onRosa, onClassifica, onC
             setVista('dashboard');
           });
         }}
+        onCompetizioni={onCompetizioni}
       />
     );
   }
 
+  // --- Hub dashboard (vista 'dashboard') ---
+
+  const alerts: Alerta[] = [];
+  if (eventiPendenti.length > 0) {
+    alerts.push({
+      id: 'decisioni',
+      titolo: `${eventiPendenti.length} decision${eventiPendenti.length === 1 ? 'e' : 'i'} in sospeso.`,
+      testo: `Hai scelte da prendere nello spogliatoio. Apri la posta per rispondere.`,
+      azione: { etichetta: 'Apri Mail', onClick: onMail },
+    });
+  }
+  if (panchinaARischio) {
+    alerts.push({
+      id: 'panchina',
+      titolo: 'Panchina a rischio.',
+      testo: `La fiducia della società è a ${stato.fiduciaSocieta}, sotto la soglia di ${SOGLIA_FIDUCIA_ESONERO}. Il presidente ha acceso i riflettori.`,
+    });
+  }
+  if (inCrisi.length > 0) {
+    alerts.push({
+      id: 'crisi',
+      titolo: `${inCrisi.length} giocatore${inCrisi.length === 1 ? '' : 'i'} in crisi.`,
+      testo: `Morale sotto 30: ${inCrisi.map((g) => g.nome).join(', ')}.`,
+      azione: { etichetta: 'Vai alla Rosa', onClick: onRosa },
+    });
+  }
+
+  const mercatoAperto = stato.giornoMercato > 0;
+  const tiles: TileDef[] = [
+    {
+      id: 'rosa',
+      etichetta: 'Rosa',
+      valore: moraleMedio,
+      nota: `Morale ${fasciaSpogliatoio(moraleMedio).toLowerCase()}${inCrisi.length > 0 ? ` · ${inCrisi.length} in crisi` : ''} · ${giocatori.length} giocatori`,
+      onApri: onRosa,
+    },
+    {
+      id: 'classifica',
+      etichetta: 'Classifica',
+      valore: rigaMia ? `${rigaMia.posizione}ª` : '—',
+      nota: `${rigaMia?.punti ?? 0} pt · ${dati.campionatoNome}`,
+      onApri: onClassifica,
+    },
+    {
+      id: 'calendario',
+      etichetta: 'Calendario',
+      valore: dati.prossimiImpegni[0]?.avversarioNome ?? '—',
+      nota: dati.prossimiImpegni.length > 1
+        ? `poi ${dati.prossimiImpegni.slice(1).map((i) => i.avversarioNome).join(', ')}`
+        : (dati.prossimiImpegni[0] ? `${dati.prossimiImpegni[0].competizioneNome} · settimana ${dati.prossimiImpegni[0].settimana}` : 'Nessun impegno'),
+      onApri: onCalendario,
+    },
+    {
+      id: 'competizioni',
+      etichetta: 'Competizioni',
+      valore: dati.competizioniAttive.length,
+      nota: dati.competizioniAttive.slice(0, 2).join(' · '),
+      onApri: onCompetizioni,
+    },
+    {
+      id: 'mercato',
+      etichetta: 'Mercato',
+      valore: mercatoAperto ? `G${stato.giornoMercato}` : 'Chiuso',
+      nota: mercatoAperto
+        ? `Finestra aperta · ${dati.trattativeAttive} trattative attive`
+        : 'La finestra estiva apre a giugno',
+      acceso: mercatoAperto,
+      onApri: onMercato,
+    },
+    {
+      id: 'vivaio',
+      etichetta: 'Vivaio',
+      valore: dati.giovaniInVivaio,
+      nota: dati.giovaniInVivaio > 0 ? 'prospetti in rosa' : 'Nessun giovane: valuta il vivaio',
+      onApri: onVivaio,
+    },
+  ];
+  if (stato.nazionaleId) {
+    tiles.push({
+      id: 'nazionale',
+      etichetta: 'Nazionale',
+      valore: 'CT',
+      nota: 'Convocazioni e torneo estivo',
+      onApri: onNazionale,
+    });
+  }
+
+
+
   return (
     <main className="page-shell">
-      <header className="topbar">
-        <button className="brand-button" type="button" onClick={onHome}>FLM <span>/ Carriera</span></button>
-        <div className="topbar-actions">
-          <span className="topbar-note">{carriera.campionato} · {carriera.stagione} · settimana {stato.settimanaCorrente}</span>
-          <nav className="topbar-nav" aria-label="Navigazione carriera">
-            <button className="button button-outline button-small" type="button" onClick={onRosa}>Rosa</button>
-            <button className="button button-outline button-small" type="button" onClick={onClassifica}>Classifica</button>
-            <button className="button button-outline button-small" type="button" onClick={onCalendario}>Calendario</button>
-          </nav>
-        </div>
-      </header>
+      <HubTopbar
+        sezione="Carriera"
+        onBrand={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        onStorico={onStorico}
+        onEsporta={() => void (async () => {
+          const { esportaSalvataggio } = await import('../db');
+          const { scaricaFile } = await import('../bridge');
+          const json = await esportaSalvataggio(carrieraId);
+          scaricaFile(JSON.stringify(json, null, 2), `flm-${carrieraId}.json`);
+        })()}
+        onHome={onHome}
+        squadra={{ nome: squadra.nome, nazione: squadra.nazione, colori: squadra.colori }}
+      />
 
-      <section className="content-wrap result-page carriera-page">
-        <p className="eyebrow">Salvataggio attivo</p>
-        <h1>{squadra.nome}</h1>
-        <p className="intro">Il gioco settimanale: gioca la partita in FL26, torna qui per il referto.</p>
+      <div className={styles.hub}>
 
-        <div className="summary-grid">
-          <div className="summary-card"><strong>{carriera.campionato}</strong><span>Campionato</span></div>
-          <div className="summary-card"><strong>{stato.budget.toLocaleString('it-IT')} €</strong><span>Budget</span></div>
-          <div className="summary-card"><strong>{stato.settimanaCorrente}</strong><span>Settimana</span></div>
-          <div className="summary-card"><strong>{stato.reputazioneAllenatore}</strong><span>Reputazione mister</span></div>
-          <div className="summary-card"><strong>{moraleMedio}</strong><span>Morale spogliatoio · {fasciaSpogliatoio(moraleMedio)}</span></div>
-        </div>
+        {/* KPI orizzontale: 3 fiducia + meta budget/reputazione */}
+        <section className={styles.kpiStrip} data-hub-tile aria-label="Fiducia e obiettivo">
+          <div className={styles.kpiGrid}>
+            <div className={styles.kpiCard}>
+              <div className={styles.kpiHead}>
+                <span className={styles.kpiLabel}>Fiducia società</span>
+                <strong className={styles.kpiVal}>{stato.fiduciaSocieta}</strong>
+              </div>
+              <span className={styles.kpiBarra} role="progressbar" aria-valuenow={stato.fiduciaSocieta} aria-valuemin={0} aria-valuemax={100}>
+                <span className={`${styles.kpiFill} ${styles.kpiFillAccent}`} style={{ width: `${stato.fiduciaSocieta}%` }} />
+              </span>
+            </div>
 
-        <section className="societa-block" aria-label="Società, obiettivi e fiducia">
-          <p className="eyebrow">Società</p>
-          {panchinaARischio && (
-            <div className="crisi-alert" role="alert">
-              <span className="signal-dot" aria-hidden="true" />
-              <p><strong>Panchina a rischio.</strong> La fiducia della società è a {stato.fiduciaSocieta}, sotto la soglia di {SOGLIA_FIDUCIA_ESONERO}. L'esonero vero arriverà in una milestone futura, ma il presidente ha già acceso i riflettori.</p>
+            <div className={styles.kpiCard}>
+              <div className={styles.kpiHead}>
+                <span className={styles.kpiLabel}>Fiducia tifosi</span>
+                <strong className={styles.kpiVal}>{stato.fiduciaTifosi}</strong>
+              </div>
+              <span className={styles.kpiBarra} role="progressbar" aria-valuenow={stato.fiduciaTifosi} aria-valuemin={0} aria-valuemax={100}>
+                <span className={`${styles.kpiFill} ${styles.kpiFillMint}`} style={{ width: `${stato.fiduciaTifosi}%` }} />
+              </span>
             </div>
-          )}
-          <div className="societa-grid">
-            <div className="societa-card">
-              <span className="societa-label">Fiducia società</span>
-              <div className="fiducia-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={stato.fiduciaSocieta} aria-label="Fiducia società"><span className="fiducia-fill fiducia-fill-societa" style={{ width: `${stato.fiduciaSocieta}%` }} /></div>
-              <strong className="fiducia-numero">{stato.fiduciaSocieta}<em>/100</em></strong>
-            </div>
-            <div className="societa-card">
-              <span className="societa-label">Fiducia tifosi</span>
-              <div className="fiducia-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={stato.fiduciaTifosi} aria-label="Fiducia tifosi"><span className="fiducia-fill fiducia-fill-tifosi" style={{ width: `${stato.fiduciaTifosi}%` }} /></div>
-              <strong className="fiducia-numero">{stato.fiduciaTifosi}<em>/100</em></strong>
-            </div>
-            <div className="societa-card societa-card-obiettivo">
-              <span className="societa-label">Obiettivo: {ETICHETTA_OBIETTIVO[carriera.obiettivo]} · {targetObiettivo}ª o meglio</span>
-              <div className="fiducia-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progresso} aria-label="Avanzamento obiettivo stagionale"><span className="fiducia-fill fiducia-fill-obiettivo" style={{ width: `${progresso}%` }} /></div>
-              <strong className="fiducia-numero">{rigaMia ? `${rigaMia.posizione}ª` : '—'}<em>/{nSquadre} · {rigaMia?.punti ?? 0} pt</em></strong>
-              {stima ? (
-                <span className={`fiducia-stima${stima.inTraiettoria ? ' fiducia-stima-ok' : ''}`}>
-                  Stima fine stagione: {stima.posizioneStimata}ª ({stima.puntiProiettati} pt)
-                </span>
-              ) : (
-                <span className="fiducia-stima">Nessuna partita giocata: nessuna stima.</span>
-              )}
+
+            <div className={styles.kpiCard}>
+              <div className={styles.kpiHead}>
+                <span className={styles.kpiLabel}>Obiettivo · {ETICHETTA_OBIETTIVO[carriera.obiettivo]}</span>
+                <strong className={styles.kpiVal}>{rigaMia?.posizione !== undefined ? `${rigaMia.posizione}ª` : '—'}<em>/{nSquadre} · {rigaMia?.punti ?? 0} pt</em></strong>
+              </div>
+              <span className={styles.kpiBarra} role="progressbar" aria-valuenow={progresso} aria-valuemin={0} aria-valuemax={100}>
+                <span className={`${styles.kpiFill} ${styles.kpiFillPaper}`} style={{ width: `${progresso}%` }} />
+              </span>
             </div>
           </div>
+
+          <button type="button" className={styles.mailBox} onClick={onMail} aria-label={`Mail ${dati.mailDaLeggere > 0 ? `· ${dati.mailDaLeggere} non lette` : ''}`}>
+            <svg className={styles.mailIcon} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
+            </svg>
+            {dati.mailDaLeggere > 0 && <span className={styles.mailBadge}>{dati.mailDaLeggere}</span>}
+          </button>
         </section>
 
-        {inCrisi.length > 0 && (
-          <div className="crisi-alert">
-            <span className="signal-dot" aria-hidden="true" />
-            <p><strong>{inCrisi.length} giocatore{inCrisi.length === 1 ? '' : 'i'} in crisi</strong> (morale sotto 30): {inCrisi.map((g) => g.nome).join(', ')}.</p>
-            <button className="button button-outline button-small" type="button" onClick={onRosa}>Vai alla Rosa</button>
-          </div>
-        )}
+        <AlertStrip alerts={alerts} />
 
-        {eventiPendenti.length > 0 && (
-          <div className="richieste-sezione">
-            <p className="eyebrow">Decisioni da prendere</p>
-            {eventiPendenti.map((e) => {
-              if (e.promessaProposta !== undefined) {
-                const giocatore = giocatori.find((g) => g.id === e.promessaProposta?.giocatoreId);
-                const pieno = giocatore !== undefined && promesseAttive(giocatore) >= PROMESSE_MAX_ATTIVE;
-                return (
-                  <div className="richiesta-card" key={e.id}>
-                    <div>
-                      <span className="status-pill">Richiesta giocatore</span>
-                      <strong>{e.titolo}</strong>
-                      <p>{e.testo}</p>
-                      {pieno && <small>Massimo {PROMESSE_MAX_ATTIVE} promesse attive: rifiuta o attendi la scadenza.</small>}
-                    </div>
-                    <div className="richiesta-azioni">
-                      <button
-                        type="button"
-                        className="button button-primary button-small"
-                        disabled={pieno}
-                        onClick={() => void decidi(e, 0)}
-                      >
-                        Prometti
-                      </button>
-                      <button type="button" className="button button-outline button-small" onClick={() => void decidi(e, 1)}>
-                        Rifiuta
-                      </button>
-                    </div>
-                  </div>
-                );
-              }
-              return (
-                <div className="richiesta-card evento-card" key={e.id}>
-                  <div>
-                    <span className="status-pill">{ETICHETTA_CATEGORIA[e.categoria]}</span>
-                    <strong>{e.titolo}</strong>
-                    <p>{e.testo}</p>
-                    {e.giocatoriCoinvolti.length > 0 && (
-                      <small>Coinvolti: {e.giocatoriCoinvolti.join(', ')}</small>
-                    )}
-                  </div>
-                  <div className="richiesta-azioni">
-                    {e.opzioni.map((opzione, indice) => (
-                      <button
-                        key={indice}
-                        type="button"
-                        className={`button button-small ${indice === 0 ? 'button-primary' : 'button-outline'}`}
-                        onClick={() => void decidiNarrativo(e, indice)}
-                      >
-                        {opzione.testo}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+        <div className={styles.bento}>
+          <div className={styles.areaMatch} data-hub-tile>
+            <MatchCard
+              squadra={squadra}
+              prossima={prossima}
+              avversaria={avversaria}
+              competizioneNome={competizione.nome}
+              matchday={matchdayProssima}
+              giornoMercato={stato.giornoMercato}
+              onReferto={apriReferto}
+              onMercato={onMercato}
+              onConcludiStagione={() => void risolviFineStagione(carrieraId).then(onFineStagione)}
+            />
           </div>
-        )}
 
-        <div className="next-match">
-          {prossima && avversaria ? (
-            <>
-              <p className="eyebrow">Prossima partita · {competizione.nome} · giornata {prossima.giornata}</p>
-              <div className="next-match-card">
-                <div className="next-match-teams">
-                  <span className={inCasa ? 'next-match-user' : ''}>{inCasa ? squadra.nome : avversaria.nome}</span>
-                  <span className="next-match-vs">VS</span>
-                  <span className={inCasa ? '' : 'next-match-user'}>{inCasa ? avversaria.nome : squadra.nome}</span>
-                </div>
-                <div className="next-match-meta">
-                  <span className="status-pill status-ok">{inCasa ? 'In casa' : 'In trasferta'}</span>
-                  <span>Potenza avversaria: {avversaria.rating}</span>
-                </div>
-              </div>
-              <button type="button" className="button button-primary button-large" onClick={apriReferto}>
-                Inserisci referto<span>→</span>
-              </button>
-            </>
-          ) : (
-            <div className="empty-roster">
-              <strong>Stagione completata</strong>
-              <span>Hai giocato tutte le giornate. La nuova stagione arriverà in una milestone futura.</span>
+          <aside className={styles.areaNews} data-hub-tile aria-label="News dal mondo">
+            <div className={styles.newsHead}>
+              <span className={styles.newsTitle}>Dal mondo</span>
+              <span className={`${styles.newsCount} ${(mondoNotizie?.length ?? 0) === 0 ? styles.newsCountVuoto : ''}`}>{mondoNotizie?.length ?? 0}</span>
             </div>
-          )}
-        </div>
+            <div className={styles.newsBody}>
+              {mondoNotizie === null ? (
+                <div className={styles.newsLoading} aria-live="polite">
+                  <span className={styles.newsLoadingBar}><span /></span>
+                  <span>Il giornale si sta stampando…</span>
+                </div>
+              ) : mondoNotizie.length === 0 ? (
+                <div className={styles.newsEmpty}>
+                  <strong>Edizione in preparazione</strong>
+                  <span>Le notizie dal mondo (fuori dalla tua squadra) arriveranno dopo il prossimo turno.</span>
+                </div>
+              ) : (
+                <WorldNewsBoard notizie={mondoNotizie} />
+              )}
+            </div>
+          </aside>
 
-        <button className="button button-outline" type="button" onClick={onHome}>← Torna alla home</button>
-      </section>
+          <div className={styles.areaTile} data-hub-tile>
+            <TileGrid tiles={tiles} />
+          </div>
+        </div>
+      </div>
     </main>
   );
 }

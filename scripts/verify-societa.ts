@@ -8,7 +8,7 @@ import 'fake-indexeddb/auto';
 
 import { db } from '../src/db/database';
 import { seedDemo } from '../src/db/seed';
-import { annullaReferto, confermaReferto, prossimaPartita, rosaDellaCarriera } from '../src/db/referti';
+import { confermaReferto, prossimaPartita, rosaDellaCarriera } from '../src/db';
 import {
   bandaAttesa,
   effettiFiduciaReferto,
@@ -164,7 +164,7 @@ async function testDb(): Promise<void> {
 
   // Giornata 1: vittoria 2-1 (Δ atteso dall'engine con i rating pre-partita)
   const xi1 = xiDefault(rosa);
-  let prossima = await prossimaPartita(squadra.id, competizione.id);
+  let prossima = await prossimaPartita(carriera.id, squadra.id);
   if (!prossima) throw new Error('Nessuna partita');
   const inCasa1 = prossima.casa === squadra.id;
   const avversarioId1 = inCasa1 ? prossima.trasferta : prossima.casa;
@@ -197,16 +197,11 @@ async function testDb(): Promise<void> {
     `${fiduciaPrima.societa}→${stato?.fiduciaSocieta} (Δ ${atteso1.fiduciaSocieta}), ${fiduciaPrima.tifosi}→${stato?.fiduciaTifosi} (Δ ${atteso1.fiduciaTifosi})`,
   );
   const fiduciaDopo1 = { societa: stato?.fiduciaSocieta ?? 0, tifosi: stato?.fiduciaTifosi ?? 0 };
-  check(
-    'referto: snapshot clubFiducia salvato sulla partita',
-    esito1.partita.statoPrima?.clubFiducia !== undefined &&
-      esito1.partita.statoPrima.clubFiducia.fiduciaSocieta === fiduciaPrima.societa,
-    JSON.stringify(esito1.partita.statoPrima?.clubFiducia),
-  );
+  // Referto immutabile: lo snapshot clubFiducia non esiste più (decisione utente).
 
   // Giornata 2: sconfitta 0-2 in trasferta (striscia −1: nessuna penale extra)
   const xi2 = xiDefault(rosa);
-  prossima = await prossimaPartita(squadra.id, competizione.id);
+  prossima = await prossimaPartita(carriera.id, squadra.id);
   if (!prossima) throw new Error('Nessuna partita 2');
   const inCasa2 = prossima.casa === squadra.id;
   const avversarioId2 = inCasa2 ? prossima.trasferta : prossima.casa;
@@ -232,6 +227,7 @@ async function testDb(): Promise<void> {
     squadraId: squadra.id,
   });
   stato = await db.statoClub.get(carriera.id);
+  const fiduciaDopo2 = { societa: stato?.fiduciaSocieta ?? 0, tifosi: stato?.fiduciaTifosi ?? 0 };
   check(
     'referto: sconfitta aggiorna la fiducia (striscia −1 senza penale)',
     stato?.fiduciaSocieta === fiduciaDopo1.societa + atteso2.fiduciaSocieta &&
@@ -240,12 +236,20 @@ async function testDb(): Promise<void> {
   );
 
   // Rollback della giornata 2: la fiducia torna esattamente a dopo-la-1
-  await annullaReferto({ carrieraId: carriera.id, partitaId: esito2.partita.id });
+  {
+      let immutabile = false;
+      try {
+        await confermaReferto({ carrieraId: carriera.id, partitaId: esito2.partita.id, golMiei: 0, golAvversario: 0, marcatori: [], titolari: titolari ?? [], infortunati: [], espulsi: [], autogolAvversari: 0 });
+      } catch {
+        immutabile = true;
+      }
+      check('referto immutabile: riconferma rifiutata', immutabile);
+    }
   stato = await db.statoClub.get(carriera.id);
   check(
-    'annulla: fiducia società/tifosi ripristinata allo snapshot',
-    stato?.fiduciaSocieta === fiduciaDopo1.societa && stato?.fiduciaTifosi === fiduciaDopo1.tifosi,
-    `${stato?.fiduciaSocieta}/${stato?.fiduciaTifosi} (atteso ${fiduciaDopo1.societa}/${fiduciaDopo1.tifosi})`,
+    'immutabile: fiducia invariata dopo tentata riconferma (resta quella della 2ª)',
+    stato?.fiduciaSocieta === fiduciaDopo2.societa && stato?.fiduciaTifosi === fiduciaDopo2.tifosi,
+    `${stato?.fiduciaSocieta}/${stato?.fiduciaTifosi} (atteso ${fiduciaDopo2.societa}/${fiduciaDopo2.tifosi})`,
   );
 }
 

@@ -80,6 +80,11 @@ export function generaCalendario(
         golTrasferta: 0,
         marcatori: [],
         giocata: false,
+        // Default rimpiazzati dal motore competizioni (generazioneStagione)
+        settimana: 0,
+        slot: 'weekend',
+        fase: 'andata',
+        neutra: false,
       });
       index++;
     }

@@ -2,14 +2,17 @@
 // Parsing e persistenza restano in src/db; regole numeriche derivate vivono in src/engine.
 
 import { profiloSquadraBootstrap, valoriGiocatoreBootstrap } from '../engine/bootstrap';
+import { ingaggioDaValore, nuovaScadenzaContratto } from '../engine/mercato';
 import { nomeNazione } from '../data/countries';
+import { legaCurataPerNome } from '../data/leagues';
+import { HEADERS_PLAYERS } from '../bridge/csv';
 import { db } from './database';
-import type { Giocatore, SquadAssignment, Squadra } from '../types/entities';
+import type { AttributiPes, Giocatore, SquadAssignment, Squadra } from '../types/entities';
 
 export const BOOTSTRAP_STAGIONE_DEFAULT = '2025/26';
 export const CSV_SEPARATORE = ';';
 
-export type BootstrapFileKind = 'giocatori' | 'squadre' | 'assegnazioni';
+export type BootstrapFileKind = 'giocatori' | 'squadre' | 'assegnazioni' | 'roster';
 
 export interface CsvRow {
   rowNumber: number;
@@ -49,6 +52,7 @@ const REQUIRED_HEADERS: Record<BootstrapFileKind, readonly string[]> = {
   giocatori: ['Id', 'Name', 'Country', 'Age', 'POS', 'GK', 'CB', 'LB', 'RB', 'DMF', 'CMF', 'LMF', 'RMF', 'AMF', 'LWF', 'RWF', 'SS', 'CF', 'MarketValue', 'OverallStats'],
   squadre: ['Id', 'Name', 'Country', 'National'],
   assegnazioni: ['Id', 'Id Club'],
+  roster: ['Id', 'Player1', 'TotalPlayers'],
 };
 
 interface RawCsvRecord {
@@ -160,6 +164,10 @@ function validateRow(kind: BootstrapFileKind, row: CsvRow): string[] {
     }
   }
 
+  if (kind === 'roster') {
+    if (!numberIsValid(value('Id'))) errors.push('Valore numerico non valido: Id');
+  }
+
   return errors;
 }
 
@@ -250,6 +258,139 @@ function ruoloDaRiga(row: CsvRow): string {
   return migliore;
 }
 
+/**
+ * Attributi completi dal CSV reale (151 colonne, PRD 7.5): parsing tollerante,
+ * le colonne mancanti cadono sui default (mai righe rotte). Booleani: True/1.
+ */
+export function attributiDaRiga(row: CsvRow, overall: number): AttributiPes {
+  const num = (header: string, def: number): number => {
+    const v = row.values[header];
+    if (v === undefined || v.trim() === '') return def;
+    const n = Number(v.trim());
+    return Number.isFinite(n) ? n : def;
+  };
+  const bool = (header: string, def = false): boolean => {
+    const v = row.values[header];
+    if (v === undefined || v.trim() === '') return def;
+    return ['true', '1'].includes(v.trim().toLowerCase());
+  };
+  const str = (header: string, def = ''): string => row.values[header] ?? def;
+  const skill = (header: string): number => {
+    const v = num(header, 50);
+    return Math.min(99, Math.max(40, v));
+  };
+
+  return {
+    JapName: str('JapName'),
+    Shirt: str('Shirt'),
+    ShirtNational: str('ShirtNational'),
+    Commentary: num('Commentary', 0),
+    Country2: num('Country2', 0),
+    Height: num('Height', 178),
+    Weight: num('Weight', 74),
+    Foot: bool('Foot'),
+    PlayingStyle: num('PlayingStyle', 5),
+    POS: num('POS', 5),
+    GK: num('GK', 0), CB: num('CB', 0), LB: num('LB', 0), RB: num('RB', 0),
+    DMF: num('DMF', 0), CMF: num('CMF', 0), LMF: num('LMF', 0), RMF: num('RMF', 0),
+    AMF: num('AMF', 0), LWF: num('LWF', 0), RWF: num('RWF', 0), SS: num('SS', 0), CF: num('CF', 0),
+    OffensiveAwareness: skill('OffensiveAwareness'),
+    BallControl: skill('BallControl'),
+    Dribbling: skill('Dribbling'),
+    TightPossession: skill('TightPossession'),
+    LowPass: skill('LowPass'),
+    LoftedPass: skill('LoftedPass'),
+    Finishing: skill('Finishing'),
+    Heading: skill('Heading'),
+    PlaceKicking: skill('PlaceKicking'),
+    Curl: skill('Curl'),
+    Speed: skill('Speed'),
+    Acceleration: skill('Acceleration'),
+    KickingPower: skill('KickingPower'),
+    Jump: skill('Jump'),
+    PhysicalContact: skill('PhysicalContact'),
+    Balance: skill('Balance'),
+    Stamina: skill('Stamina'),
+    DefensiveAwareness: skill('DefensiveAwareness'),
+    BallWinning: skill('BallWinning'),
+    Aggression: skill('Aggression'),
+    GKAwareness: skill('GKAwareness'),
+    GKCatching: skill('GKCatching'),
+    GKClearing: skill('GKClearing'),
+    GKReflexes: skill('GKReflexes'),
+    GKReach: skill('GKReach'),
+    WeakFootUsage: num('WeakFootUsage', 2),
+    WeakFootAcc: num('WeakFootAcc', 2),
+    Form: num('Form', 4),
+    InjuryResistance: num('InjuryResistance', 2),
+    Reputation: num('Reputation', 2),
+    PlayingAttitude: num('PlayingAttitude', 0),
+    Trickster: bool('Trickster'), MazingRun: bool('MazingRun'),
+    SpeedingBullet: bool('SpeedingBullet'), IncisiveRun: bool('IncisiveRun'),
+    LongBallExpert: bool('LongBallExpert'), EarlyCross: bool('EarlyCross'),
+    LongRanger: bool('LongRanger'), ScissorsFeint: bool('ScissorsFeint'),
+    DoubleTouch: bool('DoubleTouch'), FlipFlap: bool('FlipFlap'),
+    MarseilleTurn: bool('MarseilleTurn'), Sombrero: bool('Sombrero'),
+    CrossOverTurn: bool('CrossOverTurn'), CutBehindAndTurn: bool('CutBehindAndTurn'),
+    ScotchMove: bool('ScotchMove'), StepOnSkillcontrol: bool('StepOnSkillcontrol'),
+    HeadingSpecial: bool('HeadingSpecial'), LongRangeDrive: bool('LongRangeDrive'),
+    Chipshotcontrol: bool('Chipshotcontrol'), LongRangeShot: bool('LongRangeShot'),
+    KnuckleShot: bool('KnuckleShot'), DippingShots: bool('DippingShots'),
+    RisingShots: bool('RisingShots'), AcrobaticFinishing: bool('AcrobaticFinishing'),
+    HeelTrick: bool('HeelTrick'), FirstTimeShot: bool('FirstTimeShot'),
+    OneTouchPass: bool('OneTouchPass'), ThroughPassing: bool('ThroughPassing'),
+    WeightedPass: bool('WeightedPass'), PinpointCrossing: bool('PinpointCrossing'),
+    OutsideCurler: bool('OutsideCurler'), Rabona: bool('Rabona'),
+    NoLookPass: bool('NoLookPass'), LowLoftedPass: bool('LowLoftedPass'),
+    GKLowPunt: bool('GKLowPunt'), GKHighPunt: bool('GKHighPunt'),
+    LongThrow: bool('LongThrow'), GKLongThrow: bool('GKLongThrow'),
+    PenaltySpecialist: bool('PenaltySpecialist'), GKPenaltySaver: bool('GKPenaltySaver'),
+    Gamesmanship: bool('Gamesmanship'), ManMarking: bool('ManMarking'),
+    TrackBack: bool('TrackBack'), Interception: bool('Interception'),
+    AcrobaticClear: bool('AcrobaticClear'), Captaincy: bool('Captaincy'),
+    SuperSub: bool('SuperSub'), FightingSpirit: bool('FightingSpirit'),
+    Celebration1: num('Celebration1', 1),
+    Celebration2: num('Celebration2', 1),
+    DribblingHunching: num('DribblingHunching', 2),
+    DribblingArmMove: num('DribblingArmMove.', 2),
+    RunningHunching: num('RunningHunching', 2),
+    RunningArmMovement: num('RunningArmMovement', 2),
+    CornerKicks: num('CornerKicks', 1),
+    FreeKicks: num('FreeKicks', 1),
+    PenaltyKick: num('PenaltyKick', 1),
+    DribbleMotion: num('DribbleMotion', 0),
+    YouthClub: num('YouthClub', 0),
+    OwnerClub: num('OwnerClub', 0),
+    ContractUntil: str('ContractUntil', '01/01/0001 00:00:00'),
+    LoanUntil: str('LoanUntil', '01/01/0001 00:00:00'),
+    MarketValue: num('MarketValue', 0),
+    NationalCaps: num('NationalCaps', 0),
+    Legend: bool('Legend'),
+    Hand: num('Hand', 0),
+    WinnerGoldenBall: bool('WinnerGoldenBall'),
+    EditName: bool('EditName'), EditBasics: bool('EditBasics'),
+    EditPosition: bool('EditPosition'), EditPositions: bool('EditPositions'),
+    EditAbilities: bool('EditAbilities'), EditPlayerSkills: bool('EditPlayerSkills'),
+    EditPlayingStyle: bool('EditPlayingStyle'), EditCOMPlayingStyles: bool('EditCOMPlayingStyles'),
+    EditMovements: bool('EditMovements'),
+    Edit1: bool('Edit1'), Edit2: bool('Edit2'), Edit3: bool('Edit3'), Edit4: bool('Edit4'),
+    Edit5: bool('Edit5'), Edit6: bool('Edit6'), Edit7: bool('Edit7'),
+    Value1: num('Value1', 0),
+    Value2: num('Value2', 0),
+    Value3: num('Value3', 0),
+    Value2020_1: num('Value2020_1', 0),
+    Value2020_2: num('Value2020_2', 0),
+    Appearance: num('Appearance', 0),
+    ListBoots: num('ListBoots', 0),
+    ListGloves: num('ListGloves', 0),
+    InEditFile: bool('InEditFile'),
+    OverallStats: overall,
+  };
+}
+
+/** Header attesi dal parsing attributi (per validazione, subset di HEADERS_PLAYERS). */
+export const HEADERS_ATTRIBUTI = HEADERS_PLAYERS;
+
 function pesPlayerId(row: CsvRow): number {
   return numericValue(row, 'Id');
 }
@@ -268,6 +409,26 @@ function stableTeamId(pesId: number): string {
 
 function stableAssignmentId(pesId: number): string {
   return `pes-assignment-${pesId}`;
+}
+
+/**
+ * Colori sociali dalle colonne TeamColor1/2 R/G/B del CSV editor.
+ * Scala PES 0-63 → hex. null se colonne assenti o colore nero (0,0,0):
+ * inutilizzabile come accento su fondo scuro.
+ */
+export function coloreDaRiga(row: CsvRow, base: 'TeamColor1' | 'TeamColor2'): string | null {
+  const grezzo = [numericValue(row, `${base}R`), numericValue(row, `${base}G`), numericValue(row, `${base}B`)];
+  if (grezzo.some((v) => !Number.isFinite(v))) return null;
+  if (grezzo.every((v) => v === 0)) return null;
+  const canali = grezzo.map((v) => Math.round(Math.min(63, Math.max(0, v)) * (255 / 63)));
+  return `#${canali.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+}
+
+/** Coppia primario/secondario; undefined se nemmeno il primario esiste. */
+export function coloriDaRiga(row: CsvRow): { primario: string; secondario: string } | undefined {
+  const primario = coloreDaRiga(row, 'TeamColor1');
+  if (!primario) return undefined;
+  return { primario, secondario: coloreDaRiga(row, 'TeamColor2') ?? primario };
 }
 
 function uniqueRows(
@@ -310,6 +471,7 @@ export async function importaBootstrap(
     const pesId = pesPlayerId(row);
     const eta = numericValue(row, 'Age');
     const valori = valoriGiocatoreBootstrap(eta);
+    const overall = numericValue(row, 'OverallStats');
     return {
       id: stablePlayerId(pesId),
       pesId,
@@ -317,10 +479,14 @@ export async function importaBootstrap(
       nazionalita: nomeNazione(numericValue(row, 'Country')),
       eta,
       ruolo: ruoloDaRiga(row),
-      overall: numericValue(row, 'OverallStats'),
+      overall,
       ...valori,
       promesse: [],
       valoreMercato: Math.max(0, numericValue(row, 'MarketValue')),
+      scadenzaContratto: nuovaScadenzaContratto(stagione, 2 + (eta % 3)),
+      ingaggioAnnuo: ingaggioDaValore(Math.max(0, numericValue(row, 'MarketValue'))),
+      // Attributi completi (PRD 7.5): parsing tollerante delle 151 colonne
+      attributi: attributiDaRiga(row, overall),
     };
   });
 
@@ -377,20 +543,22 @@ export async function importaBootstrap(
       ? null
       : rosa.reduce((somma, giocatore) => somma + giocatore.overall, 0) / rosa.length;
     const profilo = profiloSquadraBootstrap(mediaOverall, booleanValue(textValue(row, 'National')));
-    // Colonna opzionale: se l'export contiene il campionato (es. "League"),
-    // viene valorizzato qui; altrimenti il flusso "Nuova Carriera" usa il
-    // dataset curato (src/data/leagues.ts) o il fallback per nazione.
+    const nome = textValue(row, 'Name');
+    // Colonna opzionale "League": se l'export la contiene viene valorizzata;
+    // altrimenti match per nome sul dataset curato (src/data/leagues.ts).
     const league = textValue(row, 'League').trim();
+    const campionato = league || legaCurataPerNome(nome);
     return {
       id: stableTeamId(pesId),
       pesId,
-      nome: textValue(row, 'Name'),
+      nome,
       nazione: nomeNazione(numericValue(row, 'Country')),
       nazionale: booleanValue(textValue(row, 'National')),
-      campionato: league || undefined,
+      campionato: campionato || undefined,
       mediaOverall: mediaOverall ?? undefined,
       ...profilo,
       ratingInizioStagione: profilo.rating,
+      colori: coloriDaRiga(row),
       ombra: false,
     };
   });

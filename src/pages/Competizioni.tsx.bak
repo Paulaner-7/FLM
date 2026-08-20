@@ -1,0 +1,355 @@
+// FLM — Hub Competizioni (PRD 7.1): tutte le competizioni della stagione.
+// Per competizione: classifica (campionato), tabella league phase (coppe UEFA),
+// tabellone a eliminazione (coppe), report sorteggio, classifiche speciali.
+
+import { useEffect, useState, type ReactElement } from 'react';
+import { db } from '../db';
+import {
+  classificaLeaguePhase,
+  classificaMarcatori,
+  classificaAssist,
+  classificaGolAssist,
+  classificaVotoMedio,
+  classificaPortaInviolata,
+  classificaRossi,
+  nomeFaseLeggibile,
+} from '../engine/competizioni';
+import { calcolaClassifica, type RigaClassifica } from '../engine/classifica';
+import HubTopbar from '../components/hub/HubTopbar';
+import { accentiDaColori } from '../components/hub/accento';
+import type { Carriera, Competizione, Giocatore, Id, Partita, PrestazionePartita, Squadra } from '../types/entities';
+
+interface CompetizioniProps {
+  carrieraId: string;
+  onBack: () => void;
+}
+
+interface DatiHub {
+  carriera: Carriera;
+  squadra: Squadra | undefined;
+  competizioni: Competizione[];
+  squadre: Map<Id, Squadra>;
+  giocatori: Map<Id, Giocatore>;
+}
+
+export default function Competizioni({ carrieraId, onBack }: CompetizioniProps): ReactElement {
+  const [dati, setDati] = useState<DatiHub | null>(null);
+  const [selezionata, setSelezionata] = useState<Id | null>(null);
+
+  useEffect(() => {
+    let attivo = true;
+    void (async () => {
+      const [carriera, competizioni, squadre, giocatori] = await Promise.all([
+        db.carriere.get(carrieraId),
+        db.competizioni.where('carrieraId').equals(carrieraId).toArray(),
+        db.squadre.where('carrieraId').equals(carrieraId).toArray(),
+        db.giocatori.where('carrieraId').equals(carrieraId).toArray(),
+      ]);
+      if (!attivo || !carriera) return;
+      const squadreMap = new Map(squadre.map((s) => [s.id, s]));
+      setDati({
+        carriera,
+        squadra: squadreMap.get(carriera.squadraId),
+        competizioni: competizioni.sort((a, b) => {
+          const ordine: Record<string, number> = { campionato: 0, supercoppa: 1, coppa_nazionale: 2, champions_league: 3, europa_league: 4, conference_league: 5 };
+          return (ordine[a.tipo] ?? 9) - (ordine[b.tipo] ?? 9) || a.nome.localeCompare(b.nome, 'it');
+        }),
+        squadre: squadreMap,
+        giocatori: new Map(giocatori.map((g) => [g.id, g])),
+      });
+    })();
+    return () => {
+      attivo = false;
+    };
+  }, [carrieraId]);
+
+  // D8 — accento dinamico (prima del return)
+  const primario = dati?.squadra?.colori?.primario;
+  const secondario = dati?.squadra?.colori?.secondario;
+  useEffect(() => {
+    const root = document.documentElement;
+    const { accent, accentStrong, onAccent } = accentiDaColori(
+      primario && secondario ? { primario, secondario } : undefined,
+    );
+    root.style.setProperty('--accent', accent);
+    root.style.setProperty('--accent-strong', accentStrong);
+    root.style.setProperty('--on-accent', onAccent);
+    return () => {
+      root.style.removeProperty('--accent');
+      root.style.removeProperty('--accent-strong');
+      root.style.removeProperty('--on-accent');
+    };
+  }, [primario, secondario]);
+
+  if (!dati) {
+    return <main className="page-shell loading-page"><p>Caricamento competizioni…</p></main>;
+  }
+
+  const { carriera, squadra } = dati;
+  const competizione = dati.competizioni.find((c) => c.id === selezionata) ?? null;
+
+  return (
+    <main className="page-shell">
+      <HubTopbar
+        sezione="Competizioni"
+        contesto={`Stagione ${carriera.stagione}`}
+        onBrand={onBack}
+        onStorico={() => {}}
+        onEsporta={() => {}}
+        onHome={onBack}
+        squadra={squadra ? { nome: squadra.nome, nazione: squadra.nazione, colori: squadra.colori } : undefined}
+      />
+
+      <section className="content-wrap">
+        {competizione === null ? (
+          <>
+            <p className="eyebrow">Tutte le competizioni</p>
+            <h1>Competizioni</h1>
+            <p className="intro">Classifiche, league phase, tabelloni e classifiche speciali di ogni competizione della stagione.</p>
+            <div className="comp-list">
+              {dati.competizioni.map((c) => (
+                <button key={c.id} type="button" className="comp-card" onClick={() => setSelezionata(c.id)}>
+                  <strong>{c.nome}</strong>
+                  <span>{c.fase === 'conclusa' ? 'Conclusa' : `Fase: ${nomeFaseLeggibile(c.fase as never)}`}</span>
+                  <span>{c.squadre.length} squadre</span>
+                </button>
+              ))}
+            </div>
+          </>
+        ) : (
+          <DettaglioCompetizione
+            carrieraId={carrieraId}
+            competizione={competizione}
+            dati={dati}
+            onIndietro={() => setSelezionata(null)}
+          />
+        )}
+      </section>
+    </main>
+  );
+}
+
+function DettaglioCompetizione({
+  carrieraId,
+  competizione,
+  dati,
+  onIndietro,
+}: {
+  carrieraId: string;
+  competizione: Competizione;
+  dati: DatiHub;
+  onIndietro: () => void;
+}): ReactElement {
+  const [partite, setPartite] = useState<Partita[]>([]);
+  const [prestazioni, setPrestazioni] = useState<PrestazionePartita[]>([]);
+  const [tab, setTab] = useState<'classifica' | 'tabellone' | 'sorteggio' | 'speciali'>('classifica');
+
+  useEffect(() => {
+    let attivo = true;
+    void (async () => {
+      const [p, pr] = await Promise.all([
+        db.partite.where('competizioneId').equals(competizione.id).toArray(),
+        db.prestazioni.where('competizioneId').equals(competizione.id).toArray(),
+      ]);
+      if (attivo) {
+        setPartite(p.sort((a, b) => a.giornata - b.giornata || a.id.localeCompare(b.id)));
+        setPrestazioni(pr);
+      }
+    })();
+    return () => {
+      attivo = false;
+    };
+  }, [carrieraId, competizione.id]);
+
+  const nome = (id: Id): string => dati.squadre.get(id)?.nome ?? '—';
+  const nomeGiocatore = (id: Id): string => dati.giocatori.get(id)?.nome ?? '—';
+  const squadraGiocatore = new Map(prestazioni.map((p) => [p.giocatoreId, p.squadraId]));
+  const nomiGiocatori = new Map<string, string>();
+  for (const g of dati.giocatori.values()) nomiGiocatori.set(g.id, g.nome);
+  const squadreGiocatori = new Map<string, Id>();
+  for (const p of prestazioni) if (!squadreGiocatori.has(p.giocatoreId)) squadreGiocatori.set(p.giocatoreId, p.squadraId);
+  const portieri = new Set([...dati.giocatori.values()].filter((g) => g.ruolo === 'portiere').map((g) => g.id));
+
+  const giocate = partite.filter((p) => p.giocata);
+
+  const classificaTipo = (): RigaClassifica[] | ReturnType<typeof classificaLeaguePhase> => {
+    if (competizione.formato === 'league_phase') {
+      const lp = giocate.filter((p) => p.fase === 'league_phase');
+      const coefficienti = new Map(competizione.squadre.map((s) => [s, dati.squadre.get(s)?.coefficiente ?? 0]));
+      const disciplinari = new Map<string, number>();
+      const perGiocatore = new Map<string, number>();
+      for (const p of prestazioni) {
+        perGiocatore.set(p.giocatoreId, (perGiocatore.get(p.giocatoreId) ?? 0) + (p.giallo ? 1 : 0) + (p.rosso ? 3 : 0));
+      }
+      for (const [squadraId, rosa] of dati.giocatori) {
+        let tot = 0;
+        for (const g of [rosa]) tot += perGiocatore.get(g.id) ?? 0;
+        disciplinari.set(squadraId, tot);
+      }
+      return classificaLeaguePhase(lp, competizione.squadre, coefficienti, disciplinari);
+    }
+    return calcolaClassifica(giocate, competizione.squadre);
+  };
+
+  const tabelloneFasi = ['playoff_qualificazione', 'playoff', 'ottavi', 'quarti', 'semifinali', 'finale'];
+  const partiteKo = partite.filter((p) => tabelloneFasi.includes(p.fase));
+
+  return (
+    <>
+      <button className="button button-quiet" type="button" onClick={onIndietro}>← Tutte le competizioni</button>
+      <p className="eyebrow">{competizione.tipo === 'campionato' ? 'Campionato' : competizione.nome}</p>
+      <h1>{competizione.nome}</h1>
+
+      <div className="mode-row" role="group" aria-label="Viste competizione">
+        <button type="button" className={`mode-chip ${tab === 'classifica' ? 'mode-chip-active' : ''}`} onClick={() => setTab('classifica')}>Classifica</button>
+        {partiteKo.length > 0 && (
+          <button type="button" className={`mode-chip ${tab === 'tabellone' ? 'mode-chip-active' : ''}`} onClick={() => setTab('tabellone')}>Tabellone</button>
+        )}
+        {competizione.fasce && competizione.fasce.length > 0 && (
+          <button type="button" className={`mode-chip ${tab === 'sorteggio' ? 'mode-chip-active' : ''}`} onClick={() => setTab('sorteggio')}>Sorteggio</button>
+        )}
+        <button type="button" className={`mode-chip ${tab === 'speciali' ? 'mode-chip-active' : ''}`} onClick={() => setTab('speciali')}>Classifiche speciali</button>
+      </div>
+
+      {tab === 'classifica' && (
+        <div className="standings-wrap">
+          <table className="standings-table">
+            <thead>
+              <tr>
+                <th>#</th><th>Squadra</th><th>G</th><th>V</th><th>N</th><th>P</th><th>GF</th><th>GS</th><th>DR</th><th>Punti</th>
+              </tr>
+            </thead>
+            <tbody>
+              {classificaTipo().map((r) => (
+                <tr key={r.squadraId} className={competizione.formato === 'league_phase' && (r as { qualificazione?: string }).qualificazione === 'eliminata' ? 'standings-out' : ''}>
+                  <td>{r.posizione}</td>
+                  <td className="standings-nome">{nome(r.squadraId)}</td>
+                  <td>{r.giocate}</td>
+                  <td>{r.vinte}</td>
+                  <td>{r.pareggiate}</td>
+                  <td>{r.perse}</td>
+                  <td>{r.golFatti}</td>
+                  <td>{r.golSubiti}</td>
+                  <td>{r.differenzaReti > 0 ? `+${r.differenzaReti}` : r.differenzaReti}</td>
+                  <td className="standings-punti">{r.punti}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {competizione.formato === 'league_phase' && (
+            <p className="referto-hint">
+              League phase: 1ª-8ª agli ottavi · 9ª-24ª ai playoff · 25ª-36ª eliminate.
+              {competizione.fase === 'conclusa' && competizione.vincitoreId && (
+                <> Vincitrice: <strong>{nome(competizione.vincitoreId)}</strong>.</>
+              )}
+            </p>
+          )}
+        </div>
+      )}
+
+      {tab === 'tabellone' && (
+        <div className="bracket-wrap">
+          {tabelloneFasi.map((fase) => {
+            const dellaFase = partiteKo.filter((p) => p.fase === fase);
+            if (dellaFase.length === 0) return null;
+            const perSfida = new Map<number, Partita[]>();
+            for (const p of dellaFase) {
+              const lista = perSfida.get(p.giornata) ?? [];
+              lista.push(p);
+              perSfida.set(p.giornata, lista);
+            }
+            return (
+              <section key={fase} className="bracket-round">
+                <p className="eyebrow">{nomeFaseLeggibile(fase as never)}</p>
+                {[...perSfida.entries()].sort((a, b) => a[0] - b[0]).map(([n, sfida]) => {
+                  const andata = sfida.find((p) => p.gamba === 1) ?? sfida[0]!;
+                  const ritorno = sfida.find((p) => p.gamba === 2);
+                  const totale1 = (andata.golCasa || 0) + (ritorno?.golCasa ?? 0);
+                  const totale2 = (andata.golTrasferta || 0) + (ritorno?.golTrasferta ?? 0);
+                  const rigori = ritorno?.rigori ?? andata.rigori;
+                  return (
+                    <div key={n} className={`bracket-tie ${andata.giocata ? '' : 'bracket-tbd'}`}>
+                      <strong>{nome(andata.casa)}</strong>
+                      <span className="bracket-score">
+                        {andata.giocata ? `${totale1}–${totale2}` : '–'}
+                        {rigori && ` (${rigori.casa}-${rigori.trasferta} rig.)`}
+                      </span>
+                      <strong>{nome(andata.trasferta)}</strong>
+                    </div>
+                  );
+                })}
+              </section>
+            );
+          })}
+        </div>
+      )}
+
+      {tab === 'sorteggio' && competizione.fasce && (
+        <div className="draw-wrap">
+          {competizione.fasce.map((fascia, i) => (
+            <section key={i} className="draw-pot">
+              <p className="eyebrow">Fascia {i + 1}</p>
+              <ul>
+                {fascia.map((id) => (
+                  <li key={id}>{nome(id)} <small>coeff. {dati.squadre.get(id)?.coefficiente ?? '—'}</small></li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+      )}
+
+      {tab === 'speciali' && (
+        <div className="speciali-wrap">
+          <h2 className="risultati-h2">Classifiche speciali</h2>
+          <div className="speciali-grid">
+            <ClassificaSpeciale titolo="Marcatori" righe={classificaMarcatori(prestazioni, nomiGiocatori, squadreGiocatori).slice(0, 10)} nome={nomeGiocatore} squadra={(id) => nome(squadraGiocatore.get(id) ?? '')} valore={(r) => String(r.valore)} />
+            <ClassificaSpeciale titolo="Assist" righe={classificaAssist(prestazioni, nomiGiocatori, squadreGiocatori).slice(0, 10)} nome={nomeGiocatore} squadra={(id) => nome(squadraGiocatore.get(id) ?? '')} valore={(r) => String(r.valore)} />
+            <ClassificaSpeciale titolo="G+A" righe={classificaGolAssist(prestazioni, nomiGiocatori, squadreGiocatori).slice(0, 10)} nome={nomeGiocatore} squadra={(id) => nome(squadraGiocatore.get(id) ?? '')} valore={(r) => String(r.valore)} />
+            <ClassificaSpeciale titolo="Voto medio" righe={classificaVotoMedio(prestazioni, nomiGiocatori, squadreGiocatori).slice(0, 10)} nome={nomeGiocatore} squadra={(id) => nome(squadraGiocatore.get(id) ?? '')} valore={(r) => r.valore.toFixed(2)} />
+            <ClassificaSpeciale titolo="Porta inviolata" righe={classificaPortaInviolata(prestazioni, nomiGiocatori, squadreGiocatori, portieri).slice(0, 10)} nome={nomeGiocatore} squadra={(id) => nome(squadraGiocatore.get(id) ?? '')} valore={(r) => String(r.valore)} />
+            <ClassificaSpeciale titolo="Cartellini rossi" righe={classificaRossi(prestazioni, nomiGiocatori, squadreGiocatori).slice(0, 10)} nome={nomeGiocatore} squadra={(id) => nome(squadraGiocatore.get(id) ?? '')} valore={(r) => String(r.valore)} />
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+interface RigaSpeciale {
+  giocatoreId: string;
+  valore: number;
+  presenze: number;
+}
+
+function ClassificaSpeciale({
+  titolo,
+  righe,
+  nome,
+  squadra,
+  valore,
+}: {
+  titolo: string;
+  righe: RigaSpeciale[];
+  nome: (id: string) => string;
+  squadra: (id: string) => string;
+  valore: (r: RigaSpeciale) => string;
+}): ReactElement {
+  return (
+    <section className="speciali-card">
+      <p className="eyebrow">{titolo}</p>
+      {righe.length === 0 ? (
+        <p className="giornale-vuoto">Nessun dato.</p>
+      ) : (
+        <ol>
+          {righe.map((r) => (
+            <li key={r.giocatoreId}>
+              <span className="speciali-nome"><strong>{nome(r.giocatoreId)}</strong> <small>{squadra(r.giocatoreId)}</small></span>
+              <span className="speciali-valore">{valore(r)}{titolo === 'Voto medio' ? '' : r.presenze > 0 ? ` (${r.presenze} pg)` : ''}</span>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
+  );
+}

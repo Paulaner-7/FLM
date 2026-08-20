@@ -70,8 +70,8 @@ function eventoFinto(settimana: number, categoria: Evento['categoria'], titolo: 
     testo,
     giocatoriCoinvolti: [],
     opzioni: [
-      { testo: 'Opzione A', effettiProposti: { moraleGiocatori: 1, fiduciaSocieta: 0, fiduciaTifosi: 0, reputazione: 0 } },
-      { testo: 'Opzione B', effettiProposti: { moraleGiocatori: -1, fiduciaSocieta: 0, fiduciaTifosi: 0, reputazione: 0 } },
+      { testo: 'Opzione A', effettiProposti: { moraleGiocatori: 1, fiduciaGiocatori: 0, fiduciaSocieta: 0, fiduciaTifosi: 0, reputazione: 0 } },
+      { testo: 'Opzione B', effettiProposti: { moraleGiocatori: -1, fiduciaGiocatori: 0, fiduciaSocieta: 0, fiduciaTifosi: 0, reputazione: 0 } },
     ],
     effettiApplicati: false,
   };
@@ -207,8 +207,8 @@ async function main(): Promise<void> {
           testo: 'Marco Rossi contesta le scelte',
           giocatoriCoinvolti: ['rossi marco'], // ordine invertito: deve matcheare
           opzioni: [
-            { testo: 'A', effettiProposti: { moraleGiocatori: 50, fiduciaSocieta: 0, fiduciaTifosi: 0, reputazione: 0 } },
-            { testo: 'B', effettiProposti: { moraleGiocatori: -50, fiduciaSocieta: 0, fiduciaTifosi: 0, reputazione: 0 } },
+            { testo: 'A', effettiProposti: { moraleGiocatori: 50, fiduciaGiocatori: 0, fiduciaSocieta: 0, fiduciaTifosi: 0, reputazione: 0 } },
+            { testo: 'B', effettiProposti: { moraleGiocatori: -50, fiduciaGiocatori: 0, fiduciaSocieta: 0, fiduciaTifosi: 0, reputazione: 0 } },
             { testo: 'C', effettiProposti: { moraleGiocatori: 0, fiduciaSocieta: 0, fiduciaTifosi: 0, reputazione: 0 } },
             { testo: 'D', effettiProposti: { moraleGiocatori: 0, fiduciaSocieta: 0, fiduciaTifosi: 0, reputazione: 0 } },
             { testo: 'E', effettiProposti: { moraleGiocatori: 0, fiduciaSocieta: 0, fiduciaTifosi: 0, reputazione: 0 } },

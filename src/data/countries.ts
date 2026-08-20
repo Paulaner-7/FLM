@@ -225,6 +225,35 @@ export function nomeNazione(pesCountryId: number): string {
   return NAZIONI_PES[pesCountryId] ?? `PES-${pesCountryId}`;
 }
 
+/** Reverse lookup: ID paese PES dal nome italiano (per l'export CSV, colonna Country). */
+export function pesCountryIdDaNome(nome: string): number | null {
+  for (const [id, n] of Object.entries(NAZIONI_PES)) {
+    if (n === nome) return Number(id);
+  }
+  const match = /^PES-(\d+)$/.exec(nome);
+  return match ? Number(match[1]) : null;
+}
+
+/** Tutti i nomi nazione conosciuti (per pool nazionalità rigenerati). */
+export function elencoNazioni(): string[] {
+  return [...new Set(Object.values(NAZIONI_PES))];
+}
+
+/** Nazioni europee (per i rigenerati: fascia "altre europee", decisione utente). */
+export function nazioniEuropa(): string[] {
+  return elencoNazioni().filter((n) =>
+    [
+      'Albania', 'Armenia', 'Austria', 'Azerbaigian', 'Belgio', 'Bielorussia', 'Bosnia ed Erzegovina',
+      'Bulgaria', 'Cipro', 'Croazia', 'Danimarca', 'Estonia', 'Finlandia', 'Francia', 'Galles',
+      'Georgia', 'Germania', 'Gibilterra', 'Grecia', 'Inghilterra', 'Irlanda', 'Irlanda del Nord',
+      'Islanda', 'Italia', 'Kosovo', 'Lettonia', 'Lituania', 'Lussemburgo', 'Macedonia del Nord',
+      'Malta', 'Moldavia', 'Montenegro', 'Norvegia', 'Paesi Bassi', 'Polonia', 'Portogallo',
+      'Repubblica Ceca', 'Romania', 'Russia', 'San Marino', 'Scozia', 'Serbia', 'Slovacchia',
+      'Slovenia', 'Spagna', 'Svezia', 'Svizzera', 'Turchia', 'Ucraina', 'Ungheria',
+    ].includes(n),
+  );
+}
+
 /**
  * Normalizza una dicitura salvata: "PES-215" → "Italia".
  * Usato per i dati importati prima dell'introduzione della mappa nazioni.

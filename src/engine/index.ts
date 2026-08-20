@@ -14,3 +14,6 @@ export * from './rating';
 export * from './storico';
 export * from './eventi';
 export * from './fallback-events';
+export * from './mercato';
+export * from './panchine';
+export * from './forma';

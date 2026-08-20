@@ -6,9 +6,11 @@
 
 import {
   BOOTSTRAP_STAGIONE_DEFAULT,
+  coloriDaRiga,
   importaBootstrap,
   parseBootstrapCsv,
 } from './bootstrap';
+import { db } from './database';
 import type {
   BootstrapFileKind,
   BootstrapImportSummary,
@@ -20,6 +22,7 @@ export const DOCS_CSV: Record<BootstrapFileKind, string> = {
   giocatori: 'Players - PES 2021 - Edit.csv',
   squadre: 'Teams - PES 2021 - Edit.csv',
   assegnazioni: 'Teams-Players - PES 2021 - Edit.csv',
+  roster: 'Roster - PES 2021 - Edit.csv',
 } as const;
 
 export type AutoImportFase = 'fetch' | 'parse' | 'import';
@@ -37,6 +40,7 @@ const ETICHETTA: Record<BootstrapFileKind, string> = {
   giocatori: 'Giocatori',
   squadre: 'Squadre',
   assegnazioni: 'Rose',
+  roster: 'Rose',
 };
 
 function urlDoc(kind: BootstrapFileKind): string {
@@ -90,4 +94,36 @@ export function descrizioneProgresso(progresso: AutoImportProgress): string {
   if (progresso.fase === 'fetch') return `Scaricamento ${nome} da docs/…`;
   if (progresso.fase === 'parse') return `Lettura e validazione ${nome}…`;
   return 'Scrittura nel database…';
+}
+
+/**
+ * Backfill colori sociali (TeamColor1/2 → hex) per database importati prima
+ * dell'introduzione di Squadra.colori. Idempotente, mai bloccante: aggiorna
+ * solo i record senza colori, matchando per pesId (template e copie carriera).
+ */
+export async function backfillColoriSquadre(): Promise<void> {
+  try {
+    const response = await fetch(urlDoc('squadre'));
+    if (!response.ok) return;
+    const parsed = parseBootstrapCsv(await response.text(), 'squadre', DOCS_CSV.squadre);
+    if (parsed.headerErrors.length > 0) return;
+
+    const coloriPerPesId = new Map<number, { primario: string; secondario: string }>();
+    for (const row of parsed.rows) {
+      const pesId = Number(row.values['Id'] ?? '');
+      const colori = coloriDaRiga(row);
+      if (Number.isInteger(pesId) && colori) coloriPerPesId.set(pesId, colori);
+    }
+    if (coloriPerPesId.size === 0) return;
+
+    const senzaColori = await db.squadre.filter((s) => s.colori === undefined && s.pesId !== null).toArray();
+    if (senzaColori.length === 0) return;
+    const aggiornate = senzaColori.flatMap((s) => {
+      const colori = coloriPerPesId.get(s.pesId as number);
+      return colori ? [{ ...s, colori }] : [];
+    });
+    if (aggiornate.length > 0) await db.squadre.bulkPut(aggiornate);
+  } catch {
+    // Mai bloccante: senza colori l'UI usa l'accento di default.
+  }
 }

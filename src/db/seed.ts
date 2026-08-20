@@ -4,6 +4,7 @@
 
 import { db, newId } from './database';
 import { creaCarriera } from './carriere';
+import { ingaggioDaValore, nuovaScadenzaContratto } from '../engine/mercato';
 import type {
   Giocatore,
   Squadra,
@@ -179,6 +180,8 @@ export async function seedDemo(opzioni: { force?: boolean } = {}): Promise<Esito
           giovane: ji >= 17,
           infortunioFinoA: ji === 3 ? 5 : undefined,
           valoreMercato: Math.max(50_000, overall * 1_000 + (26 - eta) * 12_000),
+          scadenzaContratto: nuovaScadenzaContratto(STAGIONE_DEMO, 2 + (ji % 3)),
+          ingaggioAnnuo: ingaggioDaValore(Math.max(50_000, overall * 1_000 + (26 - eta) * 12_000)),
         };
         rosa.push(g);
         giocatori.push(g);

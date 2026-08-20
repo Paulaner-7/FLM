@@ -1,15 +1,17 @@
-// FLM — Persistenza referto (PRD 3.3): conferma e annullamento entro lo stesso turno.
+// FLM — Persistenza referto (PRD 3.3, decisione utente: referto IMMUTABILE).
 // Regola 1 AGENTS.md: ogni dato persistente passa da qui (Dexie).
-// Ogni conferma/annullo è UNA transazione atomica: o tutto o niente.
+// Niente rollback: la validazione bloccante impedisce i referti incoerenti,
+// e l'invio è definitivo (conferma esplicita in UI).
 //
-// Conferma: salva la tua partita, applica minuti/forma/infortuni ai giocatori,
-// simula i risultati CPU del turno (rating Elo + varianza, PRD 3.2), aggiorna il
-// rating di TUTTE le squadre del turno e avanza la settimana. Annullo (solo entro
-// lo stesso turno): rollback totale di tutto. La simulazione è seminata dall'ID
-// partita: rigenerare = stesso risultato.
+// Conferma: salva la partita, applica minuti/forma/morale/promesse ai miei
+// giocatori, simula le prestazioni della squadra AVVERSARIA (decisione utente:
+// il form resta veloce, solo i miei dati), aggiorna il rating Elo, fa avanzare
+// il tabellone, e se è l'ultima partita della settimana avanza la settimana
+// (simulazione CPU a blocco in src/db/competizioni.ts).
 
 import { db, newId } from './database';
-import { calcolaClassifica, type RigaClassifica } from '../engine/classifica';
+import { prossimePartiteUtente, avanzaSettimana } from './competizioni';
+import { registraVotoFinestra } from './vivaio';
 import {
   applicaConseguenze,
   candidatoRichiestaPromessa,
@@ -17,11 +19,16 @@ import {
   testoRichiestaPromessa,
   valutaPromesseScadute,
 } from '../engine/morale';
-import { aggiornaRating, ELO_INIZIALE } from '../engine/rating';
-import { ratingEffettivo, simulaRisultato, testoNoteReferto } from '../engine/referto';
+import { aggiornaRating } from '../engine/rating';
+import { testoNoteReferto, deltaFiduciaDaMinuti } from '../engine/referto';
 import { effettiFiduciaReferto } from '../engine/societa';
+import { calcolaNuovaForma, prestazioneScore } from '../engine/forma';
 import {
-  BONUS_FORMA_PRESTAZIONE,
+  simulaEventiSquadra,
+  vincitriceSfida,
+  SQUADRA_DA_ASSEGNARE,
+} from '../engine/competizioni';
+import {
   EVENTO_RICHIESTA_SCADENZA_SETTIMANE,
   RICHIESTA_COOLDOWN_SETTIMANE,
   RIFIUTO_RICHIESTA_FIDUCIA,
@@ -29,7 +36,7 @@ import {
   SETTIMANE_INFORTUNIO,
   clamp,
 } from '../engine/rules';
-import type { Evento, Giocatore, Id, Partita, Squadra, StatoClub } from '../types/entities';
+import type { Evento, Giocatore, Id, Partita, PrestazionePartita } from '../types/entities';
 
 export interface InputConfermaReferto {
   carrieraId: Id;
@@ -41,17 +48,32 @@ export interface InputConfermaReferto {
   marcatori: Id[];
   titolari: Id[];
   infortunati: Id[];
-  prestazioniEccezionali: Id[];
+  /** Solo per referti legacy: tap "prestazione eccezionale" (+10 forma) */
+  prestazioniEccezionali?: Id[];
   espulsi: Id[];
+  /**
+   * Dati per giocatore dallo screenshot FL26: voto 1.0-10.0 a passi 0.5.
+   * Se assente valgono tap manuali e bonus gol dai marcatori.
+   */
+  prestazioni?: Record<Id, { voto: number }>;
+  /** Marcatori con minuti (schermata risultato): SOLO narrativa nelle note */
+  marcatoriConMinuti?: Array<{ id: Id; minuti: number[] }>;
+  /**
+   * Autogol avversari (decisione utente): marcatori + autogol = gol miei.
+   * Blocco duro se il conto non torna.
+   */
+  autogolAvversari?: number;
+  /** Supplementari giocati (solo eliminazione diretta) */
+  supplementari?: boolean;
+  /** Rigori (OBBLIGATORI in pareggio a eliminazione diretta) */
+  rigori?: { casa: number; trasferta: number };
 }
 
 export interface EsitoConfermaReferto {
   /** La tua partita salvata */
   partita: Partita;
-  /** Tutte le partite del turno (la tua + le simulate CPU), ordinate per coppia */
-  turno: Partita[];
-  /** Classifica aggiornata dell'intera competizione */
-  classifica: RigaClassifica[];
+  /** Settimana corrente dopo l'avanzamento */
+  settimana: number;
 }
 
 /** Giocatori della rosa dell'utente nella carriera (proprietà attiva). */
@@ -68,11 +90,16 @@ export async function rosaDellaCarriera(carrieraId: Id, squadraId: Id): Promise<
   return giocatori.filter((g) => ids.has(g.id));
 }
 
+/**
+ * Validazione BLOCCANTE del referto (decisione utente): ogni errore impedisce
+ * l'invio con un messaggio esplicito. L'invio è immutabile: meglio bloccare.
+ */
 function validaInput(
   input: InputConfermaReferto,
   partita: Partita,
   rosa: Giocatore[],
   squadraId: Id,
+  eliminazioneDiretta: boolean,
 ): string[] {
   const errori: string[] = [];
   if (!Number.isInteger(input.golMiei) || input.golMiei < 0 || input.golMiei > 30) {
@@ -82,15 +109,52 @@ function validaInput(
     errori.push(`Gol avversario non validi: ${input.golAvversario}`);
   }
   const inRosa = new Set(rosa.map((g) => g.id));
-  if (input.titolari.length > 11) errori.push(`Titolari: massimo 11 (${input.titolari.length})`);
+  if (input.titolari.length !== 11) {
+    errori.push(`Titolari: devono essere esattamente 11 (trovati ${input.titolari.length})`);
+  }
   for (const id of input.titolari) {
     if (!inRosa.has(id)) errori.push(`Titolare fuori rosa: ${id}`);
   }
   for (const id of input.marcatori) {
     if (!inRosa.has(id)) errori.push(`Marcatore fuori rosa: ${id}`);
   }
-  for (const id of [...input.infortunati, ...input.prestazioniEccezionali, ...input.espulsi]) {
+  for (const id of [...input.infortunati, ...(input.prestazioniEccezionali ?? []), ...input.espulsi]) {
     if (!inRosa.has(id)) errori.push(`Giocatore nota fuori rosa: ${id}`);
+  }
+  if (input.prestazioni) {
+    for (const [id, p] of Object.entries(input.prestazioni)) {
+      if (!inRosa.has(id)) errori.push(`Prestazione fuori rosa: ${id}`);
+      if (!Number.isFinite(p.voto) || p.voto < 1 || p.voto > 10 || Math.abs(p.voto * 2 - Math.round(p.voto * 2)) > 1e-9) {
+        errori.push(`Voto non valido per ${id}: ${p.voto} (atteso 1.0-10.0 a passi 0.5)`);
+      }
+    }
+  }
+  for (const m of input.marcatoriConMinuti ?? []) {
+    if (!inRosa.has(m.id)) errori.push(`Marcatore (minuti) fuori rosa: ${m.id}`);
+    if (!m.minuti.every((x) => Number.isInteger(x) && x >= 1 && x <= 120)) {
+      errori.push(`Minuti marcatore non validi: ${m.id}`);
+    }
+  }
+  // Marcatori ≤ gol (decisione utente: blocco duro)
+  if (input.marcatori.length > input.golMiei) {
+    errori.push(`Marcatori (${input.marcatori.length}) superano i gol segnati (${input.golMiei})`);
+  }
+  // marcatori + autogol = gol miei (decisione utente: campo autogol)
+  const autogol = input.autogolAvversari ?? 0;
+  if (input.marcatori.length + autogol !== input.golMiei) {
+    errori.push(
+      `Il conto non torna: ${input.marcatori.length} marcatori + ${autogol} autogol = ${input.marcatori.length + autogol}, attesi ${input.golMiei} gol`,
+    );
+  }
+  // Eliminazione diretta in pareggio: rigori OBBLIGATORI (decisione utente)
+  if (eliminazioneDiretta && input.golMiei === input.golAvversario && !input.rigori) {
+    errori.push('Partita a eliminazione diretta in pareggio: indicare i rigori (o i supplementari)');
+  }
+  if (input.rigori) {
+    const r = input.rigori;
+    if (!Number.isInteger(r.casa) || !Number.isInteger(r.trasferta) || r.casa < 0 || r.trasferta < 0 || r.casa === r.trasferta) {
+      errori.push(`Rigori non validi: ${r.casa}-${r.trasferta} (deve esserci una vincitrice)`);
+    }
   }
   if (partita.casa !== squadraId && partita.trasferta !== squadraId) {
     errori.push('La partita non coinvolge la tua squadra');
@@ -99,16 +163,15 @@ function validaInput(
 }
 
 /**
- * Conferma il referto della prossima partita: un'unica transazione atomica.
- * - salva la partita (gol, marcatori, note, titolari, note strutturate)
- * - applica minuti (+90 ai titolari), forma (+10 prestazione), infortuni (+2 settimane)
- * - simula e salva i risultati CPU delle altre partite del turno (seme = ID partita)
- * - avanza la settimana corrente
+ * Conferma il referto della prossima partita (IMMUTABILE, decisione utente):
+ * un'unica transazione atomica. Se è l'ultima partita della settimana,
+ * fa avanzare la settimana (simulazione CPU a blocco).
  */
 export async function confermaReferto(input: InputConfermaReferto): Promise<EsitoConfermaReferto> {
-  return db.transaction(
+  const votiDaRegistrare: Array<{ giocatoreId: Id; voto: number }> = [];
+  const esito = await db.transaction(
     'rw',
-    [db.partite, db.giocatori, db.squadre, db.squadAssignments, db.competizioni, db.statoClub, db.carriere, db.eventi],
+    [db.partite, db.giocatori, db.squadre, db.squadAssignments, db.competizioni, db.statoClub, db.carriere, db.eventi, db.prestazioni],
     async () => {
       const carriera = await db.carriere.get(input.carrieraId);
       const stato = await db.statoClub.get(input.carrieraId);
@@ -118,23 +181,21 @@ export async function confermaReferto(input: InputConfermaReferto): Promise<Esit
         throw new Error('Stato carriera incompleto: impossibile confermare il referto');
       }
       if (partita.giocata) {
-        throw new Error('Partita già giocata: impossibile confermare due volte');
+        throw new Error('Partita già giocata: il referto è immutabile');
       }
 
-      // Guardia "prossima partita": solo la prima non giocata della tua squadra è confermabile
-      const prossime = await db.partite
-        .where('competizioneId')
-        .equals(competizione.id)
-        .toArray();
-      const nonGiocate = prossime
-        .filter((p) => !p.giocata && (p.casa === carriera.squadraId || p.trasferta === carriera.squadraId))
-        .sort((a, b) => a.giornata - b.giornata);
-      if (nonGiocate[0]?.id !== partita.id) {
+      // Guardia "prossima partita" cross-competizione (decisione utente D5)
+      const prossime = await prossimePartiteUtente(input.carrieraId, carriera.squadraId);
+      if (prossime[0]?.id !== partita.id) {
         throw new Error('Referto non valido: la partita non è la prossima da giocare');
       }
 
       const rosa = await rosaDellaCarriera(input.carrieraId, carriera.squadraId);
-      const errori = validaInput(input, partita, rosa, carriera.squadraId);
+      const eliminazione =
+        competizione.formato === 'eliminazione_diretta' ||
+        (competizione.formato === 'league_phase' && partita.fase !== 'league_phase') ||
+        competizione.formato === 'partita_secca';
+      const errori = validaInput(input, partita, rosa, carriera.squadraId, eliminazione);
       if (errori.length > 0) {
         throw new Error(`Referto non valido: ${errori.join('; ')}`);
       }
@@ -148,16 +209,11 @@ export async function confermaReferto(input: InputConfermaReferto): Promise<Esit
       const note = testoNoteReferto({
         espulsi: input.espulsi.map(nome),
         infortunati: input.infortunati.map(nome),
-        prestazioni: input.prestazioniEccezionali.map(nome),
+        prestazioni: (input.prestazioniEccezionali ?? []).map(nome),
+        marcatori: (input.marcatoriConMinuti ?? []).map((m) => ({ nome: nome(m.id), minuti: m.minuti })),
       });
 
       // ---------- Morale (PRD 2.2, 3.2) ----------
-      // 1. Δ morale dal referto: titolari ±5/0 per risultato (+2 flat se marcatore),
-      //    non titolari con promessa 'titolare' attiva −2, infortunati esenti.
-      // 2. Valutazione promesse scadute alla settimana appena giocata (la partita
-      //    della settimana di scadenza conta: titolari già nel referto).
-      // 3. Richieste promessa: sweep rifiuto implicito delle scadute + eventuale
-      //    nuova richiesta (candidato deterministico dall'engine, testo offline).
       const vittoria = input.golMiei > input.golAvversario;
       const pareggio = input.golMiei === input.golAvversario;
       const deltasMorale = effettiMoraleReferto({
@@ -177,17 +233,17 @@ export async function confermaReferto(input: InputConfermaReferto): Promise<Esit
         titolari: input.titolari,
       };
       const partiteSquadra = [
-        ...prossime.filter(
+        ...(await db.partite.where('carrieraId').equals(input.carrieraId).toArray()).filter(
           (p) => p.giocata && (p.casa === carriera.squadraId || p.trasferta === carriera.squadraId),
         ),
         partitaCorrente,
       ];
       const valutazione = valutaPromesseScadute(rosa, partiteSquadra, stato.settimanaCorrente);
-      // ---------- Fiducia società & tifosi (PRD 3.2) ----------
-      // Δ deterministici dall'engine: risultato × attesa (banda Elo, rating PRIMA
-      // della partita), per i tifosi + sconfitta in casa e strisce. Applicati a
-      // StatoClub con clamp 0-100; snapshot in statoPrima per il rollback.
-      const mappaSquadre = new Map<Id, Squadra>((await db.squadre.toArray()).map((s) => [s.id, s]));
+
+      // ---------- Fiducia società & tifosi ----------
+      const mappaSquadre = new Map<Id, typeof carriera.squadraId extends never ? never : { rating: number }>();
+      const squadre = await db.squadre.toArray();
+      for (const s of squadre) mappaSquadre.set(s.id, { rating: s.rating });
       const mia = mappaSquadre.get(carriera.squadraId);
       const avversarioId = inCasa ? partita.trasferta : partita.casa;
       const avversaria = mappaSquadre.get(avversarioId);
@@ -195,15 +251,14 @@ export async function confermaReferto(input: InputConfermaReferto): Promise<Esit
         vittoria,
         pareggio,
         inCasa,
-        ratingMio: mia?.rating ?? ELO_INIZIALE,
-        ratingAvversario: avversaria?.rating ?? ELO_INIZIALE,
+        ratingMio: mia?.rating ?? 1500,
+        ratingAvversario: avversaria?.rating ?? 1500,
         partiteSquadra,
         squadraId: carriera.squadraId,
       });
 
+      // ---------- Eventi richiesta promessa (come oggi, senza rollback) ----------
       const eventiCarriera = await db.eventi.where('carrieraId').equals(input.carrieraId).toArray();
-      // Rifiuto implicito: richiesta non decisa dopo EVENTO_RICHIESTA_SCADENZA_SETTIMANE
-      const eventiRisolti: Id[] = [];
       const penalitaRifiuto = new Map<Id, { morale: number; fiducia: number }>();
       for (const e of eventiCarriera) {
         if (
@@ -213,19 +268,16 @@ export async function confermaReferto(input: InputConfermaReferto): Promise<Esit
         ) {
           continue;
         }
-        eventiRisolti.push(e.id);
         penalitaRifiuto.set(e.promessaProposta.giocatoreId, {
           morale: RIFIUTO_RICHIESTA_MORALE,
           fiducia: RIFIUTO_RICHIESTA_FIDUCIA,
         });
         await db.eventi.put({ ...e, sceltaFatta: 1, effettiApplicati: true });
       }
-
       const pending = eventiCarriera.some(
         (e) =>
           e.promessaProposta &&
           e.sceltaFatta === undefined &&
-          !eventiRisolti.includes(e.id) &&
           e.settimana + EVENTO_RICHIESTA_SCADENZA_SETTIMANE > stato.settimanaCorrente,
       );
       const richiesteRecenti = new Set(
@@ -240,7 +292,6 @@ export async function confermaReferto(input: InputConfermaReferto): Promise<Esit
         richiesteRecenti,
         pendingEsistente: pending,
       });
-      const eventiCreati: Id[] = [];
       if (proposta) {
         const nomeGiocatore = giocatori.get(proposta.giocatoreId)?.nome ?? '—';
         const evento: Evento = {
@@ -255,12 +306,13 @@ export async function confermaReferto(input: InputConfermaReferto): Promise<Esit
           opzioni: [
             {
               testo: 'Prometti',
-              effettiProposti: { moraleGiocatori: 0, fiduciaSocieta: 0, fiduciaTifosi: 0, reputazione: 0 },
+              effettiProposti: { moraleGiocatori: 0, fiduciaGiocatori: 0, fiduciaSocieta: 0, fiduciaTifosi: 0, reputazione: 0 },
             },
             {
               testo: 'Rifiuta',
               effettiProposti: {
                 moraleGiocatori: RIFIUTO_RICHIESTA_MORALE,
+                fiduciaGiocatori: RIFIUTO_RICHIESTA_FIDUCIA,
                 fiduciaSocieta: 0,
                 fiduciaTifosi: 0,
                 reputazione: 0,
@@ -270,31 +322,10 @@ export async function confermaReferto(input: InputConfermaReferto): Promise<Esit
           promessaProposta: proposta,
           effettiApplicati: false,
         };
-        eventiCreati.push(evento.id);
         await db.eventi.add(evento);
       }
 
-      // Snapshot PRIMA di ogni modifica (rollback secco in annullaReferto)
-      const toccati = new Set<Id>([
-        ...deltasMorale.keys(),
-        ...valutazione.conseguenze.keys(),
-        ...penalitaRifiuto.keys(),
-      ]);
-      const statoPrima: NonNullable<Partita['statoPrima']> = {
-        giocatori: {},
-        eventiCreati,
-        eventiRisolti,
-        clubFiducia: { fiduciaSocieta: stato.fiduciaSocieta, fiduciaTifosi: stato.fiduciaTifosi },
-      };
-      for (const id of toccati) {
-        const g = giocatori.get(id);
-        if (g) {
-          statoPrima.giocatori[id] = { morale: g.morale, fiducia: g.fiducia, promesse: g.promesse };
-        }
-      }
-
-      // Accumula TUTTI gli effetti per giocatore in un unico oggetto
-      // (un giocatore può essere insieme titolare e in nota: no sovrascritture).
+      // ---------- Effetti giocatori MIEI ----------
       const daAggiornare = new Map<Id, Giocatore>();
       const tocca = (id: Id, fn: (g: Giocatore) => Giocatore): void => {
         const g = daAggiornare.get(id) ?? giocatori.get(id);
@@ -303,9 +334,22 @@ export async function confermaReferto(input: InputConfermaReferto): Promise<Esit
       for (const id of input.titolari) {
         tocca(id, (g) => ({ ...g, minutiStagione: g.minutiStagione + 90 }));
       }
-      for (const id of input.prestazioniEccezionali) {
-        tocca(id, (g) => ({ ...g, forma: clamp(g.forma + BONUS_FORMA_PRESTAZIONE) }));
+      const esentiFiducia = new Set(input.infortunati);
+      for (const g of rosa) {
+        tocca(g.id, (pg) => ({
+          ...pg,
+          fiducia: clamp(
+            pg.fiducia +
+              deltaFiduciaDaMinuti({
+                titolare: input.titolari.includes(g.id),
+                infortunato: esentiFiducia.has(g.id),
+              }),
+          ),
+        }));
       }
+      const golDaMarcatori = new Map<Id, number>();
+      for (const id of input.marcatori) golDaMarcatori.set(id, (golDaMarcatori.get(id) ?? 0) + 1);
+      // Infortuni: applica subito prima della forma (così la forma decade)
       for (const id of input.infortunati) {
         tocca(id, (g) => ({ ...g, infortunioFinoA: stato.settimanaCorrente + SETTIMANE_INFORTUNIO }));
       }
@@ -321,11 +365,53 @@ export async function confermaReferto(input: InputConfermaReferto): Promise<Esit
       for (const [id, conseg] of penalitaRifiuto) {
         tocca(id, (g) => applicaConseguenze(g, conseg));
       }
+      // ---------- Forma UNIFICATA: morale + fiducia + prestazione → forma → overall ----------
+      // Bilanciata: prestazione 50%, morale 30%, fiducia 20%, inerzia 68%
+      // Ogni giocatore della rosa ricalcola forma (titolari + panchina + infortunati)
+      const setInfortunatiNuovi = new Set(input.infortunati);
+      const setEspulsi = new Set(input.espulsi);
+      const isCleanSheet = input.golAvversario === 0;
+      for (const g of rosa) {
+        const giaInfortunato = g.infortunioFinoA !== undefined && g.infortunioFinoA >= stato.settimanaCorrente;
+        const appenaInfortunato = setInfortunatiNuovi.has(g.id);
+        const infortunato = giaInfortunato || appenaInfortunato;
+        const titolare = input.titolari.includes(g.id);
+        // Morale/fiducia aggiornati (se pending in daAggiornare)
+        const gAgg = daAggiornare.get(g.id) ?? g;
+        const moraleNew = gAgg.morale;
+        const fiduciaNew = gAgg.fiducia;
+        const gol = golDaMarcatori.get(g.id) ?? 0;
+        let votoEff = input.prestazioni?.[g.id]?.voto;
+        if (votoEff === undefined && input.prestazioniEccezionali?.includes(g.id)) votoEff = 8.5;
+        const rosso = setEspulsi.has(g.id);
+        // Giallo: non tracciato nel referto base (solo rosso), placeholder false
+        const prestScore = infortunato
+          ? 0
+          : prestazioneScore({
+              voto: votoEff,
+              gol,
+              assist: 0,
+              giallo: false,
+              rosso,
+              titolare,
+              portaInviolata: isCleanSheet,
+              ruolo: g.ruolo,
+            });
+        const formaNew = calcolaNuovaForma({
+          formaPrecedente: g.forma,
+          morale: moraleNew,
+          fiducia: fiduciaNew,
+          prestazioneScore: prestScore,
+          infortunato,
+        });
+        tocca(g.id, (pg) => ({ ...pg, forma: formaNew }));
+      }
       if (daAggiornare.size > 0) {
         await db.giocatori.bulkPut([...daAggiornare.values()]);
       }
 
-      let partitaSalvata: Partita = {
+      // ---------- Partita salvata (IMMUTABILE) ----------
+      const partitaSalvata: Partita = {
         ...partita,
         golCasa,
         golTrasferta,
@@ -336,234 +422,159 @@ export async function confermaReferto(input: InputConfermaReferto): Promise<Esit
         prestazioniEccezionali: input.prestazioniEccezionali,
         infortunati: input.infortunati,
         espulsi: input.espulsi,
-        statoPrima,
+        prestazioni: input.prestazioni,
+        marcatoriConMinuti: input.marcatoriConMinuti,
+        autogolAvversari: input.autogolAvversari ?? 0,
+        supplementari: input.supplementari,
+        rigori: input.rigori
+          ? { casa: inCasa ? input.rigori.casa : input.rigori.trasferta, trasferta: inCasa ? input.rigori.trasferta : input.rigori.casa }
+          : undefined,
       };
       await db.partite.put(partitaSalvata);
 
-      // Risultati CPU delle altre partite del turno (seme = ID: deterministico).
-      // Il rating effettivo include: mean reversion della deriva stagionale,
-      // bonus forma dalla striscia, scostamento stagionale della squadra.
-      const giocate = prossime.filter((p) => p.giocata);
-      const simulate = new Map<Id, Partita>();
-      for (const p of prossime) {
-        if (p.giocata || p.giornata !== partita.giornata || p.id === partita.id) continue;
-        const casa = mappaSquadre.get(p.casa);
-        const trasferta = mappaSquadre.get(p.trasferta);
-        const rc = casa
-          ? ratingEffettivo(casa, input.carrieraId, carriera.stagione, giocate)
-          : ELO_INIZIALE;
-        const rt = trasferta
-          ? ratingEffettivo(trasferta, input.carrieraId, carriera.stagione, giocate)
-          : ELO_INIZIALE;
-        const { golCasa: gc, golTrasferta: gt } = simulaRisultato(p.id, rc, rt);
-        const salvata = { ...p, golCasa: gc, golTrasferta: gt, giocata: true };
-        simulate.set(p.id, salvata);
-        await db.partite.put(salvata);
+      // ---------- Prestazioni: le MIE dal referto, le AVVERSARIE simulate ----------
+      const prestazioniDaSalvare: PrestazionePartita[] = [];
+      const base = (giocatoreId: Id, titolare: boolean): PrestazionePartita => ({
+        id: newId(),
+        carrieraId: input.carrieraId,
+        partitaId: partita.id,
+        competizioneId: partita.competizioneId,
+        squadraId: carriera.squadraId,
+        giocatoreId,
+        gol: golDaMarcatori.get(giocatoreId) ?? 0,
+        assist: 0,
+        giallo: false,
+        rosso: input.espulsi.includes(giocatoreId),
+        voto: input.prestazioni?.[giocatoreId]?.voto ?? 0,
+        portaInviolata: golTrasferta === 0,
+        minuti: titolare ? 90 : 0,
+        titolare,
+      });
+      for (const g of rosa) {
+        prestazioniDaSalvare.push(base(g.id, input.titolari.includes(g.id)));
+      }
+      // Squadra avversaria: eventi simulati (decisione utente)
+      const rosaAvversaria = await rosaDellaCarriera(input.carrieraId, avversarioId);
+      if (rosaAvversaria.length > 0) {
+        const eventiAvversari = simulaEventiSquadra(
+          partita.id,
+          avversarioId,
+          rosaAvversaria,
+          input.golAvversario,
+          input.golMiei,
+        );
+        prestazioniDaSalvare.push(
+          ...eventiAvversari.map((e) => ({
+            ...e,
+            id: newId(),
+            carrieraId: input.carrieraId,
+            competizioneId: partita.competizioneId,
+          })),
+        );
+      }
+      await db.prestazioni.bulkAdd(prestazioniDaSalvare);
+
+      // ---------- Rating Elo ----------
+      const casa = squadre.find((s) => s.id === partita.casa);
+      const trasferta = squadre.find((s) => s.id === partita.trasferta);
+      if (casa && trasferta) {
+        const nuovo = aggiornaRating(golCasa, golTrasferta, casa.rating, trasferta.rating);
+        await db.squadre.put({ ...casa, rating: nuovo.ratingCasa });
+        await db.squadre.put({ ...trasferta, rating: nuovo.ratingTrasferta });
       }
 
-      // Rating Elo: ogni partita del turno (la tua + le CPU) muove entrambe le
-      // squadre. I rating PRIMA della partita restano salvati sulla partita
-      // (ratingPrima) per il rollback del referto entro lo stesso turno.
-      const partiteDelTurno: Partita[] = [partitaSalvata, ...simulate.values()];
-      const squadreDaAggiornare = new Map<Id, Squadra>();
-      for (const p of partiteDelTurno) {
-        const casa = mappaSquadre.get(p.casa);
-        const trasferta = mappaSquadre.get(p.trasferta);
-        if (!casa || !trasferta) continue;
-        const nuovo = aggiornaRating(p.golCasa, p.golTrasferta, casa.rating, trasferta.rating);
-        const conRatingPrima: Partita = { ...p, ratingPrima: { casa: casa.rating, trasferta: trasferta.rating } };
-        await db.partite.put(conRatingPrima);
-        if (p.id === partita.id) partitaSalvata = conRatingPrima;
-        simulate.set(p.id, conRatingPrima);
-        squadreDaAggiornare.set(casa.id, { ...casa, rating: nuovo.ratingCasa });
-        squadreDaAggiornare.set(trasferta.id, { ...trasferta, rating: nuovo.ratingTrasferta });
-      }
-      if (squadreDaAggiornare.size > 0) {
-        await db.squadre.bulkPut([...squadreDaAggiornare.values()]);
-      }
-
+      // ---------- Fiducia club ----------
       await db.statoClub.put({
         ...stato,
         fiduciaSocieta: clamp(stato.fiduciaSocieta + effettiFiducia.fiduciaSocieta),
         fiduciaTifosi: clamp(stato.fiduciaTifosi + effettiFiducia.fiduciaTifosi),
-        settimanaCorrente: stato.settimanaCorrente + 1,
       });
-      await db.carriere.put({ ...carriera, updatedAt: Date.now() });
 
-      const delTurno = prossime.filter((p) => p.giornata === partita.giornata);
-      const turno = delTurno
-        .map((p) => (p.id === partita.id ? partitaSalvata : (simulate.get(p.id) ?? p)))
-        .sort((a, b) => a.casa.localeCompare(b.casa, 'it'));
-      const aggiornate = delTurno.map((p) => (p.id === partita.id ? partitaSalvata : (simulate.get(p.id) ?? p)));
-      const classifica = calcolaClassifica(
-        [...prossime.filter((p) => p.giocata && !delTurno.some((t) => t.id === p.id)), ...aggiornate],
-        competizione.squadre,
-      );
-      return { partita: partitaSalvata, turno, classifica };
+      // ---------- Progressione tabellone della competizione ----------
+      await avanzaTabelloneLocale(input.carrieraId, competizione.id, partita.id);
+
+      // ---------- Avanzamento settimana (unità atomica) ----------
+      const rimanentiSettimana = (await db.partite.where('carrieraId').equals(input.carrieraId).toArray())
+        .filter(
+          (p) =>
+            !p.giocata &&
+            p.settimana === partita.settimana &&
+            (p.casa === carriera.squadraId || p.trasferta === carriera.squadraId) &&
+            p.id !== partita.id,
+        );
+      let settimana = stato.settimanaCorrente;
+      if (rimanentiSettimana.length === 0) {
+        // L'ultima partita della settimana: avanza (simula CPU a blocco).
+        // L'avanzamento è in una transazione separata per non annidare.
+        const esito = await avanzaSettimana(input.carrieraId);
+        settimana = esito.settimana;
+      }
+
+      // Voti per la verifica forma ogni 5 partite (PRD 7.5): registrati DOPO
+      // la transazione (niente transazioni annidate).
+      for (const p of prestazioniDaSalvare) {
+        if (p.voto > 0) votiDaRegistrare.push({ giocatoreId: p.giocatoreId, voto: p.voto });
+      }
+
+      return { partita: partitaSalvata, settimana };
     },
   );
+
+  // Verifica forma (finestra 5 voti): transazioni separate, mai bloccanti
+  for (const v of votiDaRegistrare) {
+    await registraVotoFinestra(input.carrieraId, v.giocatoreId, v.voto, esito.settimana);
+  }
+  return esito;
 }
 
 /**
- * Annulla il referto entro lo stesso turno (pulsante "Torna indietro" dalla
- * schermata risultati): rollback TOTALE di ciò che la conferma ha fatto.
- * Dopo l'uscita dalla schermata risultati il referto diventa storia.
+ * Progressione tabellone locale alla competizione della partita appena
+ * confermata (riempie i segnaposto del turno successivo quando la sfida o il
+ * turno si completano). La logica condivisa vive in db/competizioni.ts.
  */
-export async function annullaReferto(input: { carrieraId: Id; partitaId: Id }): Promise<void> {
-  await db.transaction(
-    'rw',
-    [db.partite, db.giocatori, db.statoClub, db.squadre, db.eventi, db.notizie],
-    async () => {
-      const stato = await db.statoClub.get(input.carrieraId);
-      const partita = await db.partite.get(input.partitaId);
-      if (!stato || !partita) throw new Error('Stato carriera incompleto: impossibile annullare');
-      if (!partita.giocata) throw new Error('Partita non giocata: nulla da annullare');
-      // "Entro lo stesso turno": la partita annullabile è solo quella dell'ultimo turno giocato
-      if (partita.giornata !== stato.settimanaCorrente - 1) {
-        throw new Error('Referto ormai storia: annullabile solo entro lo stesso turno');
-      }
+async function avanzaTabelloneLocale(_carrieraId: Id, competizioneId: Id, partitaId: Id): Promise<void> {
+  const competizione = await db.competizioni.get(competizioneId);
+  if (!competizione) return;
+  if (competizione.formato !== 'eliminazione_diretta' && competizione.formato !== 'league_phase') return;
+  const partite = await db.partite.where('competizioneId').equals(competizioneId).toArray();
+  const faseAttuale = partite.find((p) => p.id === partitaId)?.fase;
+  if (!faseAttuale || faseAttuale === 'league_phase' || faseAttuale === 'finale') return;
 
-      // Snapshot morale/fiducia/promesse: ripristino secco (rollback del referto)
-      const statoPrima = partita.statoPrima;
+  const fasi = ['playoff_qualificazione', 'playoff', 'ottavi', 'quarti', 'semifinali', 'finale'];
+  const idx = fasi.indexOf(faseAttuale);
+  if (idx === -1 || idx === fasi.length - 1) return;
+  const prossimaFase = fasi[idx + 1]!;
 
-      // Rollback minuti/forma/infortuni (dai campi strutturati della partita).
-      // Accumulo per giocatore: un titolare con prestazione eccezionale non deve
-      // essere sovrascritto dalla seconda voce (stesso bug evitato in conferma).
-      const giocatori = await db.giocatori.where('carrieraId').equals(input.carrieraId).toArray();
-      const mappaGiocatori = new Map(giocatori.map((g) => [g.id, g]));
-      const daRipristinare = new Map<Id, Giocatore>();
-      const tocca = (id: Id, fn: (g: Giocatore) => Giocatore): void => {
-        const g = daRipristinare.get(id) ?? mappaGiocatori.get(id);
-        if (g) daRipristinare.set(id, fn(g));
-      };
-      for (const id of partita.titolari ?? []) {
-        tocca(id, (g) => ({ ...g, minutiStagione: Math.max(0, g.minutiStagione - 90) }));
-      }
-      for (const id of partita.prestazioniEccezionali ?? []) {
-        tocca(id, (g) => ({ ...g, forma: clamp(g.forma - BONUS_FORMA_PRESTAZIONE) }));
-      }
-      // Reset infortunio solo se impostato dalla conferma di QUESTO referto
-      const sogliaInfortunio = partita.giornata + SETTIMANE_INFORTUNIO;
-      for (const id of partita.infortunati ?? []) {
-        tocca(id, (g) =>
-          g.infortunioFinoA === sogliaInfortunio ? { ...g, infortunioFinoA: undefined } : g,
-        );
-      }
-      // Ripristino morale/fiducia/promesse dallo snapshot (se presente)
-      if (statoPrima) {
-        for (const [id, s] of Object.entries(statoPrima.giocatori)) {
-          tocca(id, (g) => ({ ...g, morale: s.morale, fiducia: s.fiducia, promesse: s.promesse }));
-        }
-      }
-      if (daRipristinare.size > 0) await db.giocatori.bulkPut([...daRipristinare.values()]);
+  const dellaFase = partite.filter((p) => p.fase === faseAttuale);
+  if (dellaFase.some((p) => !p.giocata)) return; // turno non completo
 
-      // Rollback eventi del referto: cancella le richieste create, riapri le risolte
-      if (statoPrima) {
-        if (statoPrima.eventiCreati.length > 0) {
-          await db.eventi.bulkDelete(statoPrima.eventiCreati);
-        }
-        for (const id of statoPrima.eventiRisolti) {
-          const e = await db.eventi.get(id);
-          if (e) await db.eventi.put({ ...e, sceltaFatta: undefined, effettiApplicati: false });
-        }
-      }
+  const vincitrici: Id[] = [];
+  const perSfida = new Map<number, Partita[]>();
+  for (const p of dellaFase) {
+    const lista = perSfida.get(p.giornata) ?? [];
+    lista.push(p);
+    perSfida.set(p.giornata, lista);
+  }
+  for (const [, sfidaPartite] of [...perSfida.entries()].sort((a, b) => a[0] - b[0])) {
+    const andata = sfidaPartite.find((p) => p.gamba === 1) ?? sfidaPartite[0]!;
+    const ritorno = sfidaPartite.find((p) => p.gamba === 2) ?? sfidaPartite[0]!;
+    const v = vincitriceSfida(andata, ritorno, { testaSerie: andata.casa, avversaria: andata.trasferta });
+    if (!v) return;
+    vincitrici.push(v);
+  }
 
-      // Rollback contenuti generati dopo la conferma (eventi narrativi + notizie,
-      // PRD 4.2/4.6): l'LLM è stato chiamato fuori dalla transazione del referto,
-      // gli ID sono salvati sulla partita. Race già gestita in generaContenutiTurno
-      // (guardia su partita.giocata nella sua transazione finale).
-      const generati = partita.contenutiGeneratiDopoReferto;
-      if (generati && (generati.eventi.length > 0 || generati.notizie.length > 0)) {
-        // Prima di cancellare gli eventi: ripristino degli infortuni narrativi
-        // (pre-stato registrato sull'evento alla creazione, PRD 4.2 esteso)
-        const infortuniDaRipristinare = new Map<Id, number | undefined>();
-        for (const id of generati.eventi) {
-          const e = await db.eventi.get(id);
-          for (const inf of e?.infortuniApplicati ?? []) {
-            infortuniDaRipristinare.set(inf.giocatoreId, inf.infortunioFinoAPrima);
-          }
-        }
-        if (infortuniDaRipristinare.size > 0) {
-          const giocatoriDaRipristinare = await db.giocatori.where('carrieraId').equals(input.carrieraId).toArray();
-          const daScrivere = giocatoriDaRipristinare
-            .filter((g) => infortuniDaRipristinare.has(g.id))
-            .map((g) => ({ ...g, infortunioFinoA: infortuniDaRipristinare.get(g.id) }));
-          if (daScrivere.length > 0) await db.giocatori.bulkPut(daScrivere);
-        }
-        if (generati.eventi.length > 0) await db.eventi.bulkDelete(generati.eventi);
-        if (generati.notizie.length > 0) await db.notizie.bulkDelete(generati.notizie);
-      }
-
-      // Rollback partita utente
-      await db.partite.put({
-        ...partita,
-        golCasa: 0,
-        golTrasferta: 0,
-        marcatori: [],
-        giocata: false,
-        note: undefined,
-        titolari: undefined,
-        prestazioniEccezionali: undefined,
-        infortunati: undefined,
-        espulsi: undefined,
-        ratingPrima: undefined,
-        statoPrima: undefined,
-        contenutiGeneratiDopoReferto: undefined,
-      });
-
-      // Rollback risultati CPU del turno + rating Elo (da ratingPrima)
-      const delTurno = await db.partite
-        .where('competizioneId')
-        .equals(partita.competizioneId)
-        .toArray();
-      const squadre = await db.squadre.toArray();
-      const mappaSquadre = new Map<Id, Squadra>(squadre.map((s) => [s.id, s]));
-      const squadreDaRipristinare = new Map<Id, Squadra>();
-      for (const p of delTurno) {
-        if (p.giornata !== partita.giornata || p.id === partita.id) continue;
-        if (p.ratingPrima) {
-          const casa = mappaSquadre.get(p.casa);
-          const trasferta = mappaSquadre.get(p.trasferta);
-          if (casa) squadreDaRipristinare.set(casa.id, { ...casa, rating: p.ratingPrima.casa });
-          if (trasferta) squadreDaRipristinare.set(trasferta.id, { ...trasferta, rating: p.ratingPrima.trasferta });
-        }
-        if (p.giocata) {
-          await db.partite.put({ ...p, golCasa: 0, golTrasferta: 0, marcatori: [], giocata: false, note: undefined, ratingPrima: undefined });
-        }
-      }
-      // La partita utente conserva i rating precedenti nel suo ratingPrima
-      if (partita.ratingPrima) {
-        const casa = mappaSquadre.get(partita.casa);
-        const trasferta = mappaSquadre.get(partita.trasferta);
-        if (casa) squadreDaRipristinare.set(casa.id, { ...casa, rating: partita.ratingPrima.casa });
-        if (trasferta) squadreDaRipristinare.set(trasferta.id, { ...trasferta, rating: partita.ratingPrima.trasferta });
-      }
-      if (squadreDaRipristinare.size > 0) {
-        await db.squadre.bulkPut([...squadreDaRipristinare.values()]);
-      }
-
-      // Rollback fiducia società/tifosi (dal clubFiducia salvato nella conferma)
-      const nuovoStato: StatoClub = statoPrima?.clubFiducia
-        ? {
-            ...stato,
-            fiduciaSocieta: statoPrima.clubFiducia.fiduciaSocieta,
-            fiduciaTifosi: statoPrima.clubFiducia.fiduciaTifosi,
-            settimanaCorrente: stato.settimanaCorrente - 1,
-          }
-        : { ...stato, settimanaCorrente: stato.settimanaCorrente - 1 };
-      await db.statoClub.put(nuovoStato);
-    },
-  );
+  const segnaposto = partite
+    .filter((p) => p.fase === prossimaFase && (p.casa === SQUADRA_DA_ASSEGNARE || p.trasferta === SQUADRA_DA_ASSEGNARE))
+    .sort((a, b) => a.giornata - b.giornata || (a.gamba ?? 0) - (b.gamba ?? 0) || a.id.localeCompare(b.id));
+  let i = 0;
+  for (const p of segnaposto) {
+    const v1 = vincitrici[i * 2];
+    const v2 = vincitrici[i * 2 + 1];
+    if (v1 === undefined || v2 === undefined) continue;
+    const gamba1 = p.gamba === 1;
+    await db.partite.put({ ...p, casa: gamba1 ? v1 : v2, trasferta: gamba1 ? v2 : v1 });
+    if (p.gamba === 2 || p.gamba === undefined) i++;
+  }
 }
 
-/** La prossima partita non giocata della tua squadra nella competizione campionato. */
-export async function prossimaPartita(squadraId: Id, competizioneId: Id): Promise<Partita | null> {
-  const partite = await db.partite
-    .where('competizioneId')
-    .equals(competizioneId)
-    .toArray();
-  const prossime = partite
-    .filter((p) => !p.giocata && (p.casa === squadraId || p.trasferta === squadraId))
-    .sort((a, b) => a.giornata - b.giornata);
-  return prossime[0] ?? null;
-}
+export { SQUADRA_DA_ASSEGNARE };

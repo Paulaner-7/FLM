@@ -29,7 +29,7 @@ export interface FallbackEventoTemplate {
   opzioni: OpzioneFallback[];
 }
 
-const EFFETTI_ZERO: EffettiProposti = { moraleGiocatori: 0, fiduciaSocieta: 0, fiduciaTifosi: 0, reputazione: 0 };
+const EFFETTI_ZERO: EffettiProposti = { moraleGiocatori: 0, fiduciaGiocatori: 0, fiduciaSocieta: 0, fiduciaTifosi: 0, reputazione: 0 };
 
 export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
   // ---------------- Categoria: giocatore (12) ----------------
@@ -44,15 +44,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Colloquio privato e reintegro immediato: gli prometto spazio nelle prossime partite',
-        effettiProposti: { moraleGiocatori: 4, fiduciaSocieta: 2, fiduciaTifosi: 2, reputazione: 2 },
+        effettiProposti: { moraleGiocatori: 4, fiduciaGiocatori: 4, fiduciaSocieta: 2, fiduciaTifosi: 2, reputazione: 2 },
       },
       {
         testo: 'Ferro: si allena a parte finché non cambia atteggiamento',
-        effettiProposti: { moraleGiocatori: -6, fiduciaSocieta: 2, fiduciaTifosi: 3, reputazione: 3 },
+        effettiProposti: { moraleGiocatori: -6, fiduciaGiocatori: -6, fiduciaSocieta: 2, fiduciaTifosi: 3, reputazione: 3 },
       },
       {
         testo: 'Delego il vice e lascio che sia la società a gestire la situazione',
-        effettiProposti: { moraleGiocatori: -2, fiduciaSocieta: -3, fiduciaTifosi: -1, reputazione: -2 },
+        effettiProposti: { moraleGiocatori: -2, fiduciaGiocatori: -2, fiduciaSocieta: -3, fiduciaTifosi: -1, reputazione: -2 },
       },
     ],
   },
@@ -68,15 +68,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Sostengo il giocatore: presenza al suo fianco e piano di recupero personalizzato',
-        effettiProposti: { moraleGiocatori: 5, fiduciaSocieta: 2, fiduciaTifosi: 2, reputazione: 3 },
+        effettiProposti: { moraleGiocatori: 5, fiduciaGiocatori: 5, fiduciaSocieta: 2, fiduciaTifosi: 2, reputazione: 3 },
       },
       {
         testo: 'Concentro tutto sul mercato: serve un sostituto immediato',
-        effettiProposti: { moraleGiocatori: -4, fiduciaSocieta: 0, fiduciaTifosi: 0, reputazione: -1 },
+        effettiProposti: { moraleGiocatori: -4, fiduciaGiocatori: -4, fiduciaSocieta: 0, fiduciaTifosi: 0, reputazione: -1 },
       },
       {
         testo: 'Gestione ordinaria: lo staff medico decide tutto',
-        effettiProposti: { moraleGiocatori: -2, fiduciaSocieta: -1, fiduciaTifosi: -1, reputazione: -1 },
+        effettiProposti: { moraleGiocatori: -2, fiduciaGiocatori: -2, fiduciaSocieta: -1, fiduciaTifosi: -1, reputazione: -1 },
       },
     ],
   },
@@ -91,15 +91,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Lo lancio titolare nella prossima partita: meglio rischiare che perderlo',
-        effettiProposti: { moraleGiocatori: 6, fiduciaSocieta: -1, fiduciaTifosi: 3, reputazione: 1 },
+        effettiProposti: { moraleGiocatori: 6, fiduciaGiocatori: 6, fiduciaSocieta: -1, fiduciaTifosi: 3, reputazione: 1 },
       },
       {
         testo: 'Spiego pubblicamente il piano di inserimento graduale',
-        effettiProposti: { moraleGiocatori: 2, fiduciaSocieta: 2, fiduciaTifosi: 1, reputazione: 2 },
+        effettiProposti: { moraleGiocatori: 2, fiduciaGiocatori: 2, fiduciaSocieta: 2, fiduciaTifosi: 1, reputazione: 2 },
       },
       {
         testo: 'Ignoro le pressioni: scelte tecniche solo mie',
-        effettiProposti: { moraleGiocatori: -3, fiduciaSocieta: -2, fiduciaTifosi: -3, reputazione: -1 },
+        effettiProposti: { moraleGiocatori: -3, fiduciaGiocatori: -3, fiduciaSocieta: -2, fiduciaTifosi: -3, reputazione: -1 },
       },
     ],
   },
@@ -114,15 +114,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Lo convinco a restare: progetto e centralità assoluta',
-        effettiProposti: { moraleGiocatori: 7, fiduciaSocieta: 1, fiduciaTifosi: 5, reputazione: 3 },
+        effettiProposti: { moraleGiocatori: 7, fiduciaGiocatori: 7, fiduciaSocieta: 1, fiduciaTifosi: 5, reputazione: 3 },
       },
       {
         testo: 'Via libera alla cessione: chi non crede nel progetto non resta',
-        effettiProposti: { moraleGiocatori: -5, fiduciaSocieta: 3, fiduciaTifosi: -4, reputazione: -2 },
+        effettiProposti: { moraleGiocatori: -5, fiduciaGiocatori: -5, fiduciaSocieta: 3, fiduciaTifosi: -4, reputazione: -2 },
       },
       {
         testo: 'Rimando tutto alla società: non è un problema mio',
-        effettiProposti: { moraleGiocatori: -4, fiduciaSocieta: -4, fiduciaTifosi: -2, reputazione: -3 },
+        effettiProposti: { moraleGiocatori: -4, fiduciaGiocatori: -4, fiduciaSocieta: -4, fiduciaTifosi: -2, reputazione: -3 },
       },
     ],
   },
@@ -137,15 +137,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Lo proteggo pubblicamente e gestiamo la vicenda in famiglia',
-        effettiProposti: { moraleGiocatori: 5, fiduciaSocieta: -1, fiduciaTifosi: 1, reputazione: 1 },
+        effettiProposti: { moraleGiocatori: 5, fiduciaGiocatori: 5, fiduciaSocieta: -1, fiduciaTifosi: 1, reputazione: 1 },
       },
       {
         testo: 'Provvedimenti interni: multa e panchina, le regole valgono per tutti',
-        effettiProposti: { moraleGiocatori: -6, fiduciaSocieta: 2, fiduciaTifosi: 3, reputazione: 2 },
+        effettiProposti: { moraleGiocatori: -6, fiduciaGiocatori: -6, fiduciaSocieta: 2, fiduciaTifosi: 3, reputazione: 2 },
       },
       {
         testo: 'Nessuna dichiarazione: aspetto che la giustizia faccia il suo corso',
-        effettiProposti: { moraleGiocatori: -2, fiduciaSocieta: -2, fiduciaTifosi: -2, reputazione: -2 },
+        effettiProposti: { moraleGiocatori: -2, fiduciaGiocatori: -2, fiduciaSocieta: -2, fiduciaTifosi: -2, reputazione: -2 },
       },
     ],
   },
@@ -161,15 +161,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Programma di gestione personalizzato: pazienza e lavoro individuale',
-        effettiProposti: { moraleGiocatori: 4, fiduciaSocieta: 1, fiduciaTifosi: 1, reputazione: 2 },
+        effettiProposti: { moraleGiocatori: 4, fiduciaGiocatori: 4, fiduciaSocieta: 1, fiduciaTifosi: 1, reputazione: 2 },
       },
       {
         testo: 'Lo rimetto in campo appena possibile: i giovani devono giocare',
-        effettiProposti: { moraleGiocatori: 3, fiduciaSocieta: -1, fiduciaTifosi: 2, reputazione: -2 },
+        effettiProposti: { moraleGiocatori: 3, fiduciaGiocatori: 3, fiduciaSocieta: -1, fiduciaTifosi: 2, reputazione: -2 },
       },
       {
         testo: 'Valuto un prestito per farlo giocare con continuità',
-        effettiProposti: { moraleGiocatori: 1, fiduciaSocieta: 2, fiduciaTifosi: -3, reputazione: 1 },
+        effettiProposti: { moraleGiocatori: 1, fiduciaGiocatori: 1, fiduciaSocieta: 2, fiduciaTifosi: -3, reputazione: 1 },
       },
     ],
   },
@@ -184,15 +184,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Confronto duro in privato: rispetto reciproco, poi si volta pagina',
-        effettiProposti: { moraleGiocatori: 2, fiduciaSocieta: 2, fiduciaTifosi: 2, reputazione: 3 },
+        effettiProposti: { moraleGiocatori: 2, fiduciaGiocatori: 2, fiduciaSocieta: 2, fiduciaTifosi: 2, reputazione: 3 },
       },
       {
         testo: 'Panchina per lui alla prossima: le gerarchie non si discutono',
-        effettiProposti: { moraleGiocatori: -7, fiduciaSocieta: 1, fiduciaTifosi: 2, reputazione: 1 },
+        effettiProposti: { moraleGiocatori: -7, fiduciaGiocatori: -7, fiduciaSocieta: 1, fiduciaTifosi: 2, reputazione: 1 },
       },
       {
         testo: 'Pubblico un comunicato congiunto: gestiamo l\'immagine',
-        effettiProposti: { moraleGiocatori: 1, fiduciaSocieta: 0, fiduciaTifosi: 0, reputazione: -1 },
+        effettiProposti: { moraleGiocatori: 1, fiduciaGiocatori: 1, fiduciaSocieta: 0, fiduciaTifosi: 0, reputazione: -1 },
       },
     ],
   },
@@ -207,15 +207,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Cautela: lo gestisco a step, anche a costo di perderlo in un paio di partite',
-        effettiProposti: { moraleGiocatori: 3, fiduciaSocieta: 1, fiduciaTifosi: -1, reputazione: 2 },
+        effettiProposti: { moraleGiocatori: 3, fiduciaGiocatori: 3, fiduciaSocieta: 1, fiduciaTifosi: -1, reputazione: 2 },
       },
       {
         testo: 'Lo butto dentro: se dice di star bene, mi fido',
-        effettiProposti: { moraleGiocatori: 2, fiduciaSocieta: -2, fiduciaTifosi: 2, reputazione: -3 },
+        effettiProposti: { moraleGiocatori: 2, fiduciaGiocatori: 2, fiduciaSocieta: -2, fiduciaTifosi: 2, reputazione: -3 },
       },
       {
         testo: 'Decisione affidata al medico: non voglio responsabilità',
-        effettiProposti: { moraleGiocatori: -2, fiduciaSocieta: -2, fiduciaTifosi: -2, reputazione: -2 },
+        effettiProposti: { moraleGiocatori: -2, fiduciaGiocatori: -2, fiduciaSocieta: -2, fiduciaTifosi: -2, reputazione: -2 },
       },
     ],
   },
@@ -230,15 +230,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Gli do spazio: lo schiero e gli garantisco continuità',
-        effettiProposti: { moraleGiocatori: 6, fiduciaSocieta: -1, fiduciaTifosi: 2, reputazione: 0 },
+        effettiProposti: { moraleGiocatori: 6, fiduciaGiocatori: 6, fiduciaSocieta: -1, fiduciaTifosi: 2, reputazione: 0 },
       },
       {
         testo: 'Rispondo in campo: deve guadagnarsela',
-        effettiProposti: { moraleGiocatori: -4, fiduciaSocieta: 2, fiduciaTifosi: 1, reputazione: 2 },
+        effettiProposti: { moraleGiocatori: -4, fiduciaGiocatori: -4, fiduciaSocieta: 2, fiduciaTifosi: 1, reputazione: 2 },
       },
       {
         testo: 'Propongo alla società una cessione a gennaio se arrivano offerte',
-        effettiProposti: { moraleGiocatori: -3, fiduciaSocieta: 1, fiduciaTifosi: -2, reputazione: -1 },
+        effettiProposti: { moraleGiocatori: -3, fiduciaGiocatori: -3, fiduciaSocieta: 1, fiduciaTifosi: -2, reputazione: -1 },
       },
     ],
   },
@@ -253,15 +253,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Entro in riunione e affronto il gruppo a viso aperto',
-        effettiProposti: { moraleGiocatori: 3, fiduciaSocieta: 2, fiduciaTifosi: 2, reputazione: 4 },
+        effettiProposti: { moraleGiocatori: 3, fiduciaGiocatori: 3, fiduciaSocieta: 2, fiduciaTifosi: 2, reputazione: 4 },
       },
       {
         testo: 'Lascio che parlino e aspetto il resoconto del capitano',
-        effettiProposti: { moraleGiocatori: -2, fiduciaSocieta: -2, fiduciaTifosi: -1, reputazione: -2 },
+        effettiProposti: { moraleGiocatori: -2, fiduciaGiocatori: -2, fiduciaSocieta: -2, fiduciaTifosi: -1, reputazione: -2 },
       },
       {
         testo: 'Sciolgo le riunioni senza di me: le decisioni si prendono insieme o da soli',
-        effettiProposti: { moraleGiocatori: -6, fiduciaSocieta: 0, fiduciaTifosi: 0, reputazione: 1 },
+        effettiProposti: { moraleGiocatori: -6, fiduciaGiocatori: -6, fiduciaSocieta: 0, fiduciaTifosi: 0, reputazione: 1 },
       },
     ],
   },
@@ -276,15 +276,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Parlo col giocatore e cerco di blindarlo con un rinnovo',
-        effettiProposti: { moraleGiocatori: 5, fiduciaSocieta: 1, fiduciaTifosi: 3, reputazione: 2 },
+        effettiProposti: { moraleGiocatori: 5, fiduciaGiocatori: 5, fiduciaSocieta: 1, fiduciaTifosi: 3, reputazione: 2 },
       },
       {
         testo: 'Via libera: con quei soldi rinforziamo due ruoli',
-        effettiProposti: { moraleGiocatori: -4, fiduciaSocieta: 2, fiduciaTifosi: -3, reputazione: -1 },
+        effettiProposti: { moraleGiocatori: -4, fiduciaGiocatori: -4, fiduciaSocieta: 2, fiduciaTifosi: -3, reputazione: -1 },
       },
       {
         testo: 'Mando via l\'agente: le trattative passano solo dalla società',
-        effettiProposti: { moraleGiocatori: -5, fiduciaSocieta: 0, fiduciaTifosi: 1, reputazione: -2 },
+        effettiProposti: { moraleGiocatori: -5, fiduciaGiocatori: -5, fiduciaSocieta: 0, fiduciaTifosi: 1, reputazione: -2 },
       },
     ],
   },
@@ -299,15 +299,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Colloquio in privato: provo a capire cosa succede',
-        effettiProposti: { moraleGiocatori: 6, fiduciaSocieta: 1, fiduciaTifosi: 1, reputazione: 2 },
+        effettiProposti: { moraleGiocatori: 6, fiduciaGiocatori: 6, fiduciaSocieta: 1, fiduciaTifosi: 1, reputazione: 2 },
       },
       {
         testo: 'Lo lascio fuori squadra finché non si sveglia',
-        effettiProposti: { moraleGiocatori: -6, fiduciaSocieta: 0, fiduciaTifosi: -1, reputazione: -1 },
+        effettiProposti: { moraleGiocatori: -6, fiduciaGiocatori: -6, fiduciaSocieta: 0, fiduciaTifosi: -1, reputazione: -1 },
       },
       {
         testo: 'Ne parlo col capitano: il gruppo lo deve aiutare',
-        effettiProposti: { moraleGiocatori: 3, fiduciaSocieta: 1, fiduciaTifosi: 1, reputazione: 1 },
+        effettiProposti: { moraleGiocatori: 3, fiduciaGiocatori: 3, fiduciaSocieta: 1, fiduciaTifosi: 1, reputazione: 1 },
       },
     ],
   },
@@ -324,15 +324,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Chiedo un comunicato ufficiale di scuse e la testa del social media manager',
-        effettiProposti: { moraleGiocatori: 4, fiduciaSocieta: 1, fiduciaTifosi: 2, reputazione: 3 },
+        effettiProposti: { moraleGiocatori: 4, fiduciaGiocatori: 4, fiduciaSocieta: 1, fiduciaTifosi: 2, reputazione: 3 },
       },
       {
         testo: 'Difendo il club: era una battuta, chi se la prende è permaloso',
-        effettiProposti: { moraleGiocatori: -6, fiduciaSocieta: 1, fiduciaTifosi: -2, reputazione: -3 },
+        effettiProposti: { moraleGiocatori: -6, fiduciaGiocatori: -6, fiduciaSocieta: 1, fiduciaTifosi: -2, reputazione: -3 },
       },
       {
         testo: 'Non entro nella polemica: non sono affari miei',
-        effettiProposti: { moraleGiocatori: -3, fiduciaSocieta: -3, fiduciaTifosi: -1, reputazione: -2 },
+        effettiProposti: { moraleGiocatori: -3, fiduciaGiocatori: -3, fiduciaSocieta: -3, fiduciaTifosi: -1, reputazione: -2 },
       },
     ],
   },
@@ -347,15 +347,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Conferenza stampa: chiedo un voto di fiducia pubblico',
-        effettiProposti: { moraleGiocatori: 1, fiduciaSocieta: 3, fiduciaTifosi: 2, reputazione: 3 },
+        effettiProposti: { moraleGiocatori: 1, fiduciaGiocatori: 1, fiduciaSocieta: 3, fiduciaTifosi: 2, reputazione: 3 },
       },
       {
         testo: 'Parlo a quattr\'occhi col presidente e chiudo la questione',
-        effettiProposti: { moraleGiocatori: 0, fiduciaSocieta: 2, fiduciaTifosi: 0, reputazione: 2 },
+        effettiProposti: { moraleGiocatori: 0, fiduciaGiocatori: 0, fiduciaSocieta: 2, fiduciaTifosi: 0, reputazione: 2 },
       },
       {
         testo: 'Rispondo in campo: testa bassa e lavoro',
-        effettiProposti: { moraleGiocatori: 2, fiduciaSocieta: -2, fiduciaTifosi: 1, reputazione: -1 },
+        effettiProposti: { moraleGiocatori: 2, fiduciaGiocatori: 2, fiduciaSocieta: -2, fiduciaTifosi: 1, reputazione: -1 },
       },
     ],
   },
@@ -370,15 +370,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Mi faccio garante del gruppo: intervengo per tenere unito lo spogliatoio',
-        effettiProposti: { moraleGiocatori: 4, fiduciaSocieta: -1, fiduciaTifosi: 2, reputazione: 4 },
+        effettiProposti: { moraleGiocatori: 4, fiduciaGiocatori: 4, fiduciaSocieta: -1, fiduciaTifosi: 2, reputazione: 4 },
       },
       {
         testo: 'Tengo le distanze: questione tra presidente e giustizia',
-        effettiProposti: { moraleGiocatori: -2, fiduciaSocieta: -3, fiduciaTifosi: -3, reputazione: -2 },
+        effettiProposti: { moraleGiocatori: -2, fiduciaGiocatori: -2, fiduciaSocieta: -3, fiduciaTifosi: -3, reputazione: -2 },
       },
       {
         testo: 'Chiedo garanzie scritte sul progetto alla proprietà',
-        effettiProposti: { moraleGiocatori: 1, fiduciaSocieta: -2, fiduciaTifosi: 1, reputazione: 1 },
+        effettiProposti: { moraleGiocatori: 1, fiduciaGiocatori: 1, fiduciaSocieta: -2, fiduciaTifosi: 1, reputazione: 1 },
       },
     ],
   },
@@ -393,15 +393,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Mi adeguo al nuovo corso: dialogo e disponibilità',
-        effettiProposti: { moraleGiocatori: 1, fiduciaSocieta: 4, fiduciaTifosi: 0, reputazione: 1 },
+        effettiProposti: { moraleGiocatori: 1, fiduciaGiocatori: 1, fiduciaSocieta: 4, fiduciaTifosi: 0, reputazione: 1 },
       },
       {
         testo: 'Difendo il mio progetto: o si fa come dico io o valuto le dimissioni',
-        effettiProposti: { moraleGiocatori: -2, fiduciaSocieta: -6, fiduciaTifosi: 1, reputazione: -2 },
+        effettiProposti: { moraleGiocatori: -2, fiduciaGiocatori: -2, fiduciaSocieta: -6, fiduciaTifosi: 1, reputazione: -2 },
       },
       {
         testo: 'Chiedo un incontro a tre: presidente, DS e allenatore',
-        effettiProposti: { moraleGiocatori: 0, fiduciaSocieta: 1, fiduciaTifosi: 0, reputazione: 2 },
+        effettiProposti: { moraleGiocatori: 0, fiduciaGiocatori: 0, fiduciaSocieta: 1, fiduciaTifosi: 0, reputazione: 2 },
       },
     ],
   },
@@ -416,15 +416,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Rassicuro la squadra: a me interessa solo il campo',
-        effettiProposti: { moraleGiocatori: 4, fiduciaSocieta: 0, fiduciaTifosi: 2, reputazione: 3 },
+        effettiProposti: { moraleGiocatori: 4, fiduciaGiocatori: 4, fiduciaSocieta: 0, fiduciaTifosi: 2, reputazione: 3 },
       },
       {
         testo: 'Pretendo risposte dalla proprietà sulla programmazione',
-        effettiProposti: { moraleGiocatori: -1, fiduciaSocieta: -3, fiduciaTifosi: -1, reputazione: 0 },
+        effettiProposti: { moraleGiocatori: -1, fiduciaGiocatori: -1, fiduciaSocieta: -3, fiduciaTifosi: -1, reputazione: 0 },
       },
       {
         testo: 'Uso l\'incertezza come stimolo: chi resta, resta per il progetto',
-        effettiProposti: { moraleGiocatori: 2, fiduciaSocieta: -2, fiduciaTifosi: 1, reputazione: 2 },
+        effettiProposti: { moraleGiocatori: 2, fiduciaGiocatori: 2, fiduciaSocieta: -2, fiduciaTifosi: 1, reputazione: 2 },
       },
     ],
   },
@@ -439,15 +439,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Veto sulla cessione: sul campo decido io',
-        effettiProposti: { moraleGiocatori: 3, fiduciaSocieta: -3, fiduciaTifosi: 2, reputazione: 2 },
+        effettiProposti: { moraleGiocatori: 3, fiduciaGiocatori: 3, fiduciaSocieta: -3, fiduciaTifosi: 2, reputazione: 2 },
       },
       {
         testo: 'Accetto la cessione ma pretendo un sostituto allo stesso livello',
-        effettiProposti: { moraleGiocatori: -2, fiduciaSocieta: 2, fiduciaTifosi: -1, reputazione: 0 },
+        effettiProposti: { moraleGiocatori: -2, fiduciaGiocatori: -2, fiduciaSocieta: 2, fiduciaTifosi: -1, reputazione: 0 },
       },
       {
         testo: 'Mediazione: lo teniamo fino a gennaio, poi si rivaluta',
-        effettiProposti: { moraleGiocatori: 1, fiduciaSocieta: 1, fiduciaTifosi: 0, reputazione: 1 },
+        effettiProposti: { moraleGiocatori: 1, fiduciaGiocatori: 1, fiduciaSocieta: 1, fiduciaTifosi: 0, reputazione: 1 },
       },
     ],
   },
@@ -462,15 +462,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Progetto giovani: trasformo il limite in opportunità',
-        effettiProposti: { moraleGiocatori: 2, fiduciaSocieta: 3, fiduciaTifosi: -2, reputazione: 2 },
+        effettiProposti: { moraleGiocatori: 2, fiduciaGiocatori: 2, fiduciaSocieta: 3, fiduciaTifosi: -2, reputazione: 2 },
       },
       {
         testo: 'Protesto formalmente: senza rinforzi non posso garantire risultati',
-        effettiProposti: { moraleGiocatori: -1, fiduciaSocieta: -4, fiduciaTifosi: -1, reputazione: -2 },
+        effettiProposti: { moraleGiocatori: -1, fiduciaGiocatori: -1, fiduciaSocieta: -4, fiduciaTifosi: -1, reputazione: -2 },
       },
       {
         testo: 'Accetto e cerco di vendere i giocatori scontenti',
-        effettiProposti: { moraleGiocatori: -3, fiduciaSocieta: 2, fiduciaTifosi: -3, reputazione: -1 },
+        effettiProposti: { moraleGiocatori: -3, fiduciaGiocatori: -3, fiduciaSocieta: 2, fiduciaTifosi: -3, reputazione: -1 },
       },
     ],
   },
@@ -485,15 +485,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Trasformo la trasferta in un\'occasione: gruppo contro tutto',
-        effettiProposti: { moraleGiocatori: 3, fiduciaSocieta: 1, fiduciaTifosi: 2, reputazione: 2 },
+        effettiProposti: { moraleGiocatori: 3, fiduciaGiocatori: 3, fiduciaSocieta: 1, fiduciaTifosi: 2, reputazione: 2 },
       },
       {
         testo: 'Chiedo spiegazioni sui tempi: è una decisione troppo affrettata',
-        effettiProposti: { moraleGiocatori: -1, fiduciaSocieta: -3, fiduciaTifosi: -2, reputazione: -1 },
+        effettiProposti: { moraleGiocatori: -1, fiduciaGiocatori: -1, fiduciaSocieta: -3, fiduciaTifosi: -2, reputazione: -1 },
       },
       {
         testo: 'Organizzo io il rapporto coi tifosi in trasferta',
-        effettiProposti: { moraleGiocatori: 1, fiduciaSocieta: 1, fiduciaTifosi: 4, reputazione: 2 },
+        effettiProposti: { moraleGiocatori: 1, fiduciaGiocatori: 1, fiduciaSocieta: 1, fiduciaTifosi: 4, reputazione: 2 },
       },
     ],
   },
@@ -508,15 +508,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Accetto: pubblico l\'obiettivo e mi prendo la responsabilità',
-        effettiProposti: { moraleGiocatori: 2, fiduciaSocieta: 5, fiduciaTifosi: 3, reputazione: 3 },
+        effettiProposti: { moraleGiocatori: 2, fiduciaGiocatori: 2, fiduciaSocieta: 5, fiduciaTifosi: 3, reputazione: 3 },
       },
       {
         testo: 'Rifiuto le promesse pubbliche: risultato sì, proclami no',
-        effettiProposti: { moraleGiocatori: 0, fiduciaSocieta: -2, fiduciaTifosi: -1, reputazione: 1 },
+        effettiProposti: { moraleGiocatori: 0, fiduciaGiocatori: 0, fiduciaSocieta: -2, fiduciaTifosi: -1, reputazione: 1 },
       },
       {
         testo: 'Chiedo contropartite: rinnovo sì, ma con budget garantito',
-        effettiProposti: { moraleGiocatori: 0, fiduciaSocieta: 1, fiduciaTifosi: 0, reputazione: 1 },
+        effettiProposti: { moraleGiocatori: 0, fiduciaGiocatori: 0, fiduciaSocieta: 1, fiduciaTifosi: 0, reputazione: 1 },
       },
     ],
   },
@@ -533,15 +533,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Vado a parlare coi tifosi: li ascolto e mi faccio portavoce',
-        effettiProposti: { moraleGiocatori: 1, fiduciaSocieta: -1, fiduciaTifosi: 4, reputazione: 3 },
+        effettiProposti: { moraleGiocatori: 1, fiduciaGiocatori: 1, fiduciaSocieta: -1, fiduciaTifosi: 4, reputazione: 3 },
       },
       {
         testo: 'Invito alla calma: le proteste non aiutano la squadra',
-        effettiProposti: { moraleGiocatori: 0, fiduciaSocieta: 2, fiduciaTifosi: -3, reputazione: -1 },
+        effettiProposti: { moraleGiocatori: 0, fiduciaGiocatori: 0, fiduciaSocieta: 2, fiduciaTifosi: -3, reputazione: -1 },
       },
       {
         testo: 'Silenzio stampa: chi di dovere risponderà',
-        effettiProposti: { moraleGiocatori: -1, fiduciaSocieta: -2, fiduciaTifosi: -2, reputazione: -2 },
+        effettiProposti: { moraleGiocatori: -1, fiduciaGiocatori: -1, fiduciaSocieta: -2, fiduciaTifosi: -2, reputazione: -2 },
       },
     ],
   },
@@ -556,15 +556,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Conferenza stampa diretta: rispondo punto su punto',
-        effettiProposti: { moraleGiocatori: 1, fiduciaSocieta: 1, fiduciaTifosi: 1, reputazione: 3 },
+        effettiProposti: { moraleGiocatori: 1, fiduciaGiocatori: 1, fiduciaSocieta: 1, fiduciaTifosi: 1, reputazione: 3 },
       },
       {
         testo: 'Ignoro i media: giudice è solo il campo',
-        effettiProposti: { moraleGiocatori: 2, fiduciaSocieta: -1, fiduciaTifosi: -2, reputazione: -1 },
+        effettiProposti: { moraleGiocatori: 2, fiduciaGiocatori: 2, fiduciaSocieta: -1, fiduciaTifosi: -2, reputazione: -1 },
       },
       {
         testo: 'Uso la pressione come carburante nello spogliatoio',
-        effettiProposti: { moraleGiocatori: 4, fiduciaSocieta: 0, fiduciaTifosi: 1, reputazione: 2 },
+        effettiProposti: { moraleGiocatori: 4, fiduciaGiocatori: 4, fiduciaSocieta: 0, fiduciaTifosi: 1, reputazione: 2 },
       },
     ],
   },
@@ -579,15 +579,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Chiedo un chiarimento immediato e una smentita pubblica',
-        effettiProposti: { moraleGiocatori: 2, fiduciaSocieta: 2, fiduciaTifosi: 3, reputazione: 2 },
+        effettiProposti: { moraleGiocatori: 2, fiduciaGiocatori: 2, fiduciaSocieta: 2, fiduciaTifosi: 3, reputazione: 2 },
       },
       {
         testo: 'Multa per comportamento: i social del club si gestiscono col club',
-        effettiProposti: { moraleGiocatori: -5, fiduciaSocieta: 1, fiduciaTifosi: 2, reputazione: -1 },
+        effettiProposti: { moraleGiocatori: -5, fiduciaGiocatori: -5, fiduciaSocieta: 1, fiduciaTifosi: 2, reputazione: -1 },
       },
       {
         testo: 'Non ci vedo nulla di male: libertà di espressione',
-        effettiProposti: { moraleGiocatori: 1, fiduciaSocieta: -2, fiduciaTifosi: -3, reputazione: -2 },
+        effettiProposti: { moraleGiocatori: 1, fiduciaGiocatori: 1, fiduciaSocieta: -2, fiduciaTifosi: -3, reputazione: -2 },
       },
     ],
   },
@@ -602,15 +602,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Lancio un appello: la squadra ha bisogno della gente',
-        effettiProposti: { moraleGiocatori: 3, fiduciaSocieta: 0, fiduciaTifosi: 4, reputazione: 2 },
+        effettiProposti: { moraleGiocatori: 3, fiduciaGiocatori: 3, fiduciaSocieta: 0, fiduciaTifosi: 4, reputazione: 2 },
       },
       {
         testo: 'Rispetto la protesta: i silenzi si meritano sul campo',
-        effettiProposti: { moraleGiocatori: 1, fiduciaSocieta: 1, fiduciaTifosi: 1, reputazione: 2 },
+        effettiProposti: { moraleGiocatori: 1, fiduciaGiocatori: 1, fiduciaSocieta: 1, fiduciaTifosi: 1, reputazione: 2 },
       },
       {
         testo: 'Chiedo alla società di mediare con la curva',
-        effettiProposti: { moraleGiocatori: -1, fiduciaSocieta: -2, fiduciaTifosi: -2, reputazione: -2 },
+        effettiProposti: { moraleGiocatori: -1, fiduciaGiocatori: -1, fiduciaSocieta: -2, fiduciaTifosi: -2, reputazione: -2 },
       },
     ],
   },
@@ -625,15 +625,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Denuncia formale: il limite è il rispetto',
-        effettiProposti: { moraleGiocatori: 0, fiduciaSocieta: 1, fiduciaTifosi: 1, reputazione: 2 },
+        effettiProposti: { moraleGiocatori: 0, fiduciaGiocatori: 0, fiduciaSocieta: 1, fiduciaTifosi: 1, reputazione: 2 },
       },
       {
         testo: 'Ironia: rispondo con una battuta che diventa virale',
-        effettiProposti: { moraleGiocatori: 2, fiduciaSocieta: 0, fiduciaTifosi: 2, reputazione: 1 },
+        effettiProposti: { moraleGiocatori: 2, fiduciaGiocatori: 2, fiduciaSocieta: 0, fiduciaTifosi: 2, reputazione: 1 },
       },
       {
         testo: 'Tiro dritto: chi parla non allena',
-        effettiProposti: { moraleGiocatori: 1, fiduciaSocieta: -1, fiduciaTifosi: -1, reputazione: -1 },
+        effettiProposti: { moraleGiocatori: 1, fiduciaGiocatori: 1, fiduciaSocieta: -1, fiduciaTifosi: -1, reputazione: -1 },
       },
     ],
   },
@@ -648,15 +648,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Lo lancio: la città merita di vedere il suo talento',
-        effettiProposti: { moraleGiocatori: 5, fiduciaSocieta: 1, fiduciaTifosi: 5, reputazione: 2 },
+        effettiProposti: { moraleGiocatori: 5, fiduciaGiocatori: 5, fiduciaSocieta: 1, fiduciaTifosi: 5, reputazione: 2 },
       },
       {
         testo: 'Lo gestisco con calma: i giovani si bruciano in fretta',
-        effettiProposti: { moraleGiocatori: 1, fiduciaSocieta: 1, fiduciaTifosi: -3, reputazione: 1 },
+        effettiProposti: { moraleGiocatori: 1, fiduciaGiocatori: 1, fiduciaSocieta: 1, fiduciaTifosi: -3, reputazione: 1 },
       },
       {
         testo: 'Lo faccio giocare solo a risultato acquisito',
-        effettiProposti: { moraleGiocatori: -2, fiduciaSocieta: 0, fiduciaTifosi: -2, reputazione: -1 },
+        effettiProposti: { moraleGiocatori: -2, fiduciaGiocatori: -2, fiduciaSocieta: 0, fiduciaTifosi: -2, reputazione: -1 },
       },
     ],
   },
@@ -671,15 +671,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Riunione di squadra: chiudiamo il caso davanti a tutti',
-        effettiProposti: { moraleGiocatori: 4, fiduciaSocieta: 1, fiduciaTifosi: 2, reputazione: 3 },
+        effettiProposti: { moraleGiocatori: 4, fiduciaGiocatori: 4, fiduciaSocieta: 1, fiduciaTifosi: 2, reputazione: 3 },
       },
       {
         testo: 'Smentita ufficiale via club e nessun altro commento',
-        effettiProposti: { moraleGiocatori: 0, fiduciaSocieta: 1, fiduciaTifosi: 0, reputazione: 0 },
+        effettiProposti: { moraleGiocatori: 0, fiduciaGiocatori: 0, fiduciaSocieta: 1, fiduciaTifosi: 0, reputazione: 0 },
       },
       {
         testo: 'Caccio la talpa: chi parla con i giornali paga',
-        effettiProposti: { moraleGiocatori: -5, fiduciaSocieta: 0, fiduciaTifosi: 1, reputazione: -1 },
+        effettiProposti: { moraleGiocatori: -5, fiduciaGiocatori: -5, fiduciaSocieta: 0, fiduciaTifosi: 1, reputazione: -1 },
       },
     ],
   },
@@ -694,15 +694,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Ringrazio pubblicamente e dedico la prossima vittoria alla curva',
-        effettiProposti: { moraleGiocatori: 3, fiduciaSocieta: 1, fiduciaTifosi: 3, reputazione: 3 },
+        effettiProposti: { moraleGiocatori: 3, fiduciaGiocatori: 3, fiduciaSocieta: 1, fiduciaTifosi: 3, reputazione: 3 },
       },
       {
         testo: 'Ringrazio in privato: le dediche si fanno in campo',
-        effettiProposti: { moraleGiocatori: 1, fiduciaSocieta: 0, fiduciaTifosi: -1, reputazione: 1 },
+        effettiProposti: { moraleGiocatori: 1, fiduciaGiocatori: 1, fiduciaSocieta: 0, fiduciaTifosi: -1, reputazione: 1 },
       },
       {
         testo: 'La uso come stimolo: "Questo affetto va ripagato"',
-        effettiProposti: { moraleGiocatori: 4, fiduciaSocieta: 0, fiduciaTifosi: 2, reputazione: 2 },
+        effettiProposti: { moraleGiocatori: 4, fiduciaGiocatori: 4, fiduciaSocieta: 0, fiduciaTifosi: 2, reputazione: 2 },
       },
     ],
   },
@@ -717,15 +717,15 @@ export const EVENTI_FALLBACK: FallbackEventoTemplate[] = [
     opzioni: [
       {
         testo: 'Vado a salutarli prima della partita e li ringrazio pubblicamente',
-        effettiProposti: { moraleGiocatori: 3, fiduciaSocieta: 1, fiduciaTifosi: 4, reputazione: 3 },
+        effettiProposti: { moraleGiocatori: 3, fiduciaGiocatori: 3, fiduciaSocieta: 1, fiduciaTifosi: 4, reputazione: 3 },
       },
       {
         testo: 'Li cito in conferenza: "Giocheremo anche per loro"',
-        effettiProposti: { moraleGiocatori: 2, fiduciaSocieta: 0, fiduciaTifosi: 2, reputazione: 2 },
+        effettiProposti: { moraleGiocatori: 2, fiduciaGiocatori: 2, fiduciaSocieta: 0, fiduciaTifosi: 2, reputazione: 2 },
       },
       {
         testo: 'Nessun gesto particolare: le parole valgono meno dei risultati',
-        effettiProposti: { moraleGiocatori: -1, fiduciaSocieta: 0, fiduciaTifosi: -2, reputazione: -1 },
+        effettiProposti: { moraleGiocatori: -1, fiduciaGiocatori: -1, fiduciaSocieta: 0, fiduciaTifosi: -2, reputazione: -1 },
       },
     ],
   },

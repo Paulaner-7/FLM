@@ -1,0 +1,368 @@
+/* FLM — Classifica: broadcast high-end, coerente con Carriera/Rosa. */
+
+.pagina {
+  margin: 0 auto;
+  max-width: 1440px;
+  padding: clamp(18px, 3vw, 36px) clamp(16px, 3vw, 40px) 80px;
+  padding-top: clamp(42px, 4vw, 54px);
+}
+
+/* ---------- Testata ---------- */
+.testata {
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  display: flex;
+  gap: 18px;
+  margin-bottom: 16px;
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.testata::before {
+  background: var(--accent);
+  content: "";
+  height: 1px;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  opacity: 0.9;
+}
+
+.logoComp {
+  flex-shrink: 0;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2));
+  height: clamp(42px, 4.8vw, 54px);
+  object-fit: contain;
+  width: clamp(42px, 4.8vw, 54px);
+}
+
+.testataTesto { min-width: 0; }
+
+.eyebrow {
+  color: var(--paper-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  margin: 0 0 6px;
+  text-transform: uppercase;
+}
+
+.nomeComp {
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-size: clamp(26px, 3.4vw, 42px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stagione {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--paper-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  margin-left: auto;
+  padding: 7px 12px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ---------- Tab ---------- */
+.tabRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.tab {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--paper-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  min-height: 36px;
+  padding: 8px 16px;
+  text-transform: uppercase;
+  transition: border-color 180ms ease, background 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.tab:hover { border-color: var(--paper-muted); color: var(--paper); background: rgba(233,230,220,0.04); }
+
+.tabAttivo {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-color: var(--accent);
+  color: var(--paper);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+/* ---------- Tabella ---------- */
+.tabellaWrap {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  overflow-x: auto;
+}
+
+.tabella {
+  border-collapse: collapse;
+  min-width: 680px;
+  width: 100%;
+}
+
+.tabella th {
+  background: color-mix(in srgb, var(--panel-2) 90%, transparent);
+  border-bottom: 1px solid var(--line);
+  color: var(--paper-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  padding: 12px 10px;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tabella th:first-child,
+.tabella td:first-child { padding-left: 14px; }
+
+.tabella th:nth-child(2),
+.tabella td:nth-child(2) { text-align: left; }
+
+.tabella td {
+  border-bottom: 1px solid var(--line);
+  color: var(--paper-muted);
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 12px 10px;
+  text-align: center;
+  transition: background 150ms ease;
+}
+
+.tabella tbody tr:last-child td { border-bottom: 0; }
+.tabella tbody tr:hover td { background: rgba(233,230,220,0.03); }
+
+.rigaUtente td { background: color-mix(in srgb, var(--accent) 5%, transparent); color: var(--paper); }
+.rigaUtente:hover td { background: color-mix(in srgb, var(--accent) 8%, transparent) !important; }
+
+.posizione {
+  align-items: center;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--paper-muted);
+  display: inline-flex;
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  height: 26px;
+  justify-content: center;
+  min-width: 26px;
+  width: 26px;
+}
+
+.posizioneTop {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+
+.squadraCella { align-items: center; display: flex; gap: 10px; min-width: 0; }
+
+.logoSquadra {
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.2));
+  flex-shrink: 0;
+  height: 24px;
+  object-fit: contain;
+  width: 24px;
+}
+
+.nomeSquadra {
+  color: var(--paper);
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rigaUtente .nomeSquadra { font-weight: 700; }
+
+.punti {
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+}
+.rigaUtente .punti { color: var(--accent-strong); }
+
+.drPos { color: var(--mint); font-weight: 600; }
+.drNeg { color: var(--danger); font-weight: 600; }
+
+/* Forma */
+.formaDots { align-items: center; display: inline-flex; gap: 5px; }
+.formaDot { border-radius: 50%; height: 8px; width: 8px; box-shadow: 0 0 0 1px rgba(0,0,0,0.15); }
+
+/* ---------- Giornate ---------- */
+.giornateLista { display: flex; flex-direction: column; gap: 14px; }
+
+.giornataBlocco {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  padding: 0;
+  position: relative;
+}
+
+.giornataBlocco::before {
+  background: var(--accent);
+  content: "";
+  height: 1px;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  opacity: 0.7;
+}
+
+.giornataIntestazione {
+  background: color-mix(in srgb, var(--panel-2) 85%, transparent);
+  border-bottom: 1px solid var(--line);
+  color: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  margin: 0;
+  padding: 12px 16px;
+  text-transform: uppercase;
+}
+
+.risultati { display: flex; flex-direction: column; }
+
+.risultatoRiga {
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  min-height: 54px;
+  padding: 12px 16px;
+  transition: background 150ms ease;
+}
+
+.risultatoRiga:last-child { border-bottom: 0; }
+.risultatoRiga:hover { background: rgba(233,230,220,0.03); }
+.risultatoMia { background: color-mix(in srgb, var(--accent) 4%, transparent); }
+.risultatoMia:hover { background: color-mix(in srgb, var(--accent) 7%, transparent) !important; }
+
+.risultatoSquadre { align-items: center; display: flex; flex-wrap: wrap; gap: 10px; min-width: 0; }
+.risultatoSquadra { align-items: center; display: flex; gap: 8px; min-width: 0; }
+
+.logoMini {
+  filter: drop-shadow(0 1px 4px rgba(0,0,0,0.18));
+  flex-shrink: 0;
+  height: 20px;
+  object-fit: contain;
+  width: 20px;
+}
+
+.nomeAvversario {
+  color: var(--paper-muted);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nomeMio { color: var(--paper); font-weight: 700; }
+
+.sedeIcona {
+  align-items: center;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: inline-flex;
+  flex-shrink: 0;
+  height: 20px;
+  justify-content: center;
+  width: 20px;
+}
+
+.sedeIcona svg { display: block; fill: currentColor; height: 12px; width: 12px; }
+.sedeCasa { color: var(--mint); border-color: color-mix(in srgb, var(--mint) 22%, transparent); }
+.sedeTrasferta { color: var(--paper-muted); }
+
+.separatore { color: var(--paper-muted); font-size: 11px; opacity: 0.7; }
+
+.esito { align-items: center; display: flex; gap: 8px; margin-left: auto; }
+
+.esitoPunteggio {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  min-width: 64px;
+  padding: 5px 8px;
+  text-align: center;
+}
+
+.risultatoMia .esitoPunteggio { border-color: color-mix(in srgb, var(--accent) 28%, transparent); color: var(--accent-strong); }
+
+.esitoRigori {
+  color: var(--paper-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.pillMia {
+  background: color-mix(in srgb, var(--mint) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--mint) 28%, transparent);
+  border-radius: 999px;
+  color: var(--mint);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 4px 8px;
+  text-transform: uppercase;
+}
+
+.vuoto {
+  background: var(--panel);
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  color: var(--paper-muted);
+  font-size: 13px;
+  padding: 24px 18px;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .testata { align-items: flex-start; flex-wrap: wrap; }
+  .stagione { margin-left: 0; width: 100%; text-align: left; }
+  .risultatoSquadre { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .esito { margin-left: 0; width: 100%; justify-content: flex-start; }
+}

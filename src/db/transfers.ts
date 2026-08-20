@@ -34,11 +34,12 @@ export async function eseguiTrasferimento(p: ParametriTrasferimento): Promise<Es
     );
     if (!esito.ok) return { ok: false, errori: esito.errori };
 
-    const { chiusura, nuovaAssegnazione, voceLedger, budgetAggiornato } = esito.piano;
+    const { chiusura, nuovaAssegnazione, voceLedger, budgetAggiornato, budgetCedenteAggiornato } = esito.piano;
     await db.squadAssignments.put(chiusura);
     await db.squadAssignments.add(nuovaAssegnazione);
     await db.transferLedger.add(voceLedger);
     await db.squadre.update(p.aSquadraId, { budget: budgetAggiornato });
+    await db.squadre.update(p.daSquadraId, { budget: budgetCedenteAggiornato });
     return { ok: true, voceLedger };
   });
 }

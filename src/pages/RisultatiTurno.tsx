@@ -1,23 +1,26 @@
-// FLM — Pagina "Risultati del turno" (PRD 3.3): risultati della giornata appena
-// confermata + classifica aggiornata. Qui vive anche il pulsante "Torna indietro":
-// annulla il referto entro lo stesso turno (rollback totale, PRD + task).
+// FLM — Pagina "Risultati del turno" (PRD 3.3): dopo il referto, i risultati
+// della GIORNATA DI CAMPIONATO appena conclusa (solo la tua lega, es. Serie A).
+// Gli altri campionati, coppe e classifiche speciali restano nella pagina
+// Competizioni. Niente "torna indietro": il referto è immutabile (decisione utente).
 
-import { useState, type ReactElement } from 'react';
-import { annullaReferto, type EsitoConfermaReferto } from '../db';
-import type { Id, Notizia, Squadra } from '../types/entities';
+import { useEffect, useState, type ReactElement } from 'react';
+import { db } from '../db';
+import type { EsitoConfermaReferto } from '../db';
+import type { Id, Notizia, Partita, Squadra } from '../types/entities';
 
 interface RisultatiTurnoProps {
   carrieraId: string;
   esito: EsitoConfermaReferto;
   squadraId: Id;
   squadre: Map<Id, Squadra>;
-  /** Giornata del turno appena giocato */
-  giornata: number;
-  competizioneNome: string;
+  /** Il campionato dell'utente (es. Serie A): solo i suoi risultati qui */
+  campionatoId: Id;
+  campionatoNome: string;
   /** Notizie del turno: null = generazione in corso, undefined = non richieste */
   notizie?: Notizia[] | null;
-  onTornaIndietro: () => void;
   onDashboard: () => void;
+  /** Naviga all'hub Competizioni (tutti gli altri risultati e classifiche) */
+  onCompetizioni: () => void;
 }
 
 export default function RisultatiTurno({
@@ -25,92 +28,105 @@ export default function RisultatiTurno({
   esito,
   squadraId,
   squadre,
-  giornata,
-  competizioneNome,
+  campionatoId,
+  campionatoNome,
   notizie,
-  onTornaIndietro,
   onDashboard,
+  onCompetizioni,
 }: RisultatiTurnoProps): ReactElement {
-  const [annullamento, setAnnullamento] = useState(false);
-  const [errore, setErrore] = useState<string | null>(null);
+  const [partiteSettimana, setPartiteSettimana] = useState<Partita[]>([]);
+
+  useEffect(() => {
+    let attivo = true;
+    void db.partite
+      .where('carrieraId')
+      .equals(carrieraId)
+      .and((p) => p.settimana === esito.partita.settimana)
+      .toArray()
+      .then((tutte) => {
+        if (attivo) {
+          setPartiteSettimana(
+            tutte.sort((a, b) => a.slot.localeCompare(b.slot) || a.id.localeCompare(b.id)),
+          );
+        }
+      });
+    return () => {
+      attivo = false;
+    };
+  }, [carrieraId, esito]);
 
   const nome = (id: Id): string => squadre.get(id)?.nome ?? '—';
 
-  const tornaIndietro = async (): Promise<void> => {
-    setAnnullamento(true);
-    setErrore(null);
-    try {
-      await annullaReferto({ carrieraId, partitaId: esito.partita.id });
-      onTornaIndietro();
-    } catch (e) {
-      setErrore(e instanceof Error ? e.message : 'Errore durante l\'annullamento');
-      setAnnullamento(false);
-    }
-  };
+  // Solo il campionato dell'utente: una settimana = una giornata.
+  const partiteCampionato = partiteSettimana.filter((p) => p.competizioneId === campionatoId);
+  const giocate = partiteCampionato.filter((p) => p.giocata);
+  const giornata = partiteCampionato.length > 0
+    ? Math.max(...partiteCampionato.map((p) => p.giornata))
+    : null;
+  const miaInCampionato = giocate.some((p) => p.id === esito.partita.id);
 
   return (
     <main className="page-shell">
       <header className="topbar">
         <button className="brand-button" type="button" onClick={onDashboard}>FLM <span>/ Risultati</span></button>
         <div className="topbar-actions">
-          <span className="topbar-note">{competizioneNome} · giornata {giornata}</span>
+          <span className="topbar-note">Settimana {esito.partita.settimana}</span>
         </div>
       </header>
 
       <section className="content-wrap risultati-page">
-        <p className="eyebrow">Turno concluso</p>
-        <h1>Risultati del turno</h1>
-        <p className="intro">La tua partita è in evidenza. Il resto del turno è stato simulato sulla potenza delle squadre (rating Elo), con un tocco di varianza.</p>
+        <p className="eyebrow">
+          {giornata !== null ? `Giornata ${giornata} · ${campionatoNome}` : 'Settimana conclusa'}
+        </p>
+        <h1>Risultati della giornata</h1>
+        <p className="intro">
+          {miaInCampionato ? 'La tua partita è in evidenza. ' : 'Il tuo referto è registrato. '}
+          {campionatoNome}
+          {giornata !== null ? `, giornata ${giornata}` : ''}: gli altri risultati sono stati simulati
+          sulla potenza delle squadre (rating Elo), con un tocco di varianza. Tutti gli altri campionati,
+          coppe e classifiche speciali restano nella pagina Competizioni.
+        </p>
 
-        {/* Risultati */}
-        <div className="results-list">
-          {esito.turno.map((p) => {
-            const mia = p.casa === squadraId || p.trasferta === squadraId;
-            return (
-              <div key={p.id} className={`result-row ${mia ? 'result-row-mia' : ''}`}>
-                <div className="result-teams">
-                  <span className={p.casa === squadraId ? 'result-user' : ''}>{nome(p.casa)}</span>
-                  <span className="result-sep">–</span>
-                  <span className={p.trasferta === squadraId ? 'result-user' : ''}>{nome(p.trasferta)}</span>
+        {/* Risultati della giornata di campionato */}
+        {partiteCampionato.length === 0 ? (
+          <div className="giornale-vuoto">
+            Questa settimana non c'è una giornata di {campionatoNome}: tutte le altre partite
+            (coppe e altri campionati) sono in pagina Competizioni.
+          </div>
+        ) : giocate.length === 0 ? (
+          <div className="giornale-vuoto">
+            La giornata di {campionatoNome} non è ancora conclusa: la tua partita di campionato è in
+            programma più avanti in questa settimana. I risultati arriveranno dopo il tuo referto;
+            nel frattempo trovi tutto il resto nella pagina Competizioni.
+          </div>
+        ) : (
+          <div className="results-list">
+            {giocate.map((p) => {
+              const mia = p.casa === squadraId || p.trasferta === squadraId;
+              const rigori = p.rigori ? ` (${p.rigori.casa}-${p.rigori.trasferta} rig.)` : '';
+              return (
+                <div key={p.id} className={`result-row ${mia ? 'result-row-mia' : ''}`}>
+                  <div className="result-teams">
+                    <span className={p.casa === squadraId ? 'result-user' : ''}>{nome(p.casa)}</span>
+                    <span className="result-sep">–</span>
+                    <span className={p.trasferta === squadraId ? 'result-user' : ''}>{nome(p.trasferta)}</span>
+                  </div>
+                  <div className="result-score">
+                    <strong>{p.golCasa}</strong>
+                    <span>–</span>
+                    <strong>{p.golTrasferta}</strong>
+                    {rigori}
+                  </div>
+                  <div className="result-meta">
+                    <span className="result-comp">{campionatoNome}</span>
+                    {mia && <span className="status-pill status-ok">La tua partita</span>}
+                  </div>
                 </div>
-                <div className="result-score">
-                  <strong>{p.golCasa}</strong>
-                  <span>–</span>
-                  <strong>{p.golTrasferta}</strong>
-                </div>
-                {mia && <span className="status-pill status-ok">La tua partita</span>}
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
-        {/* Classifica */}
-        <h2 className="risultati-h2">Classifica</h2>
-        <div className="standings-wrap">
-          <table className="standings-table">
-            <thead>
-              <tr>
-                <th>#</th><th>Squadra</th><th>G</th><th>V</th><th>N</th><th>P</th><th>GF</th><th>GS</th><th>DR</th><th>Punti</th>
-              </tr>
-            </thead>
-            <tbody>
-              {esito.classifica.map((r) => (
-                <tr key={r.squadraId} className={r.squadraId === squadraId ? 'standings-user' : ''}>
-                  <td>{r.posizione}</td>
-                  <td className="standings-nome">{nome(r.squadraId)}</td>
-                  <td>{r.giocate}</td>
-                  <td>{r.vinte}</td>
-                  <td>{r.pareggiate}</td>
-                  <td>{r.perse}</td>
-                  <td>{r.golFatti}</td>
-                  <td>{r.golSubiti}</td>
-                  <td>{r.differenzaReti > 0 ? `+${r.differenzaReti}` : r.differenzaReti}</td>
-                  <td className="standings-punti">{r.punti}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
         {/* Il giornale del giorno dopo (PRD 4.2): notizie del turno */}
         {notizie !== undefined && (
           <section className="giornale-sezione" aria-label="Il giornale del giorno dopo">
@@ -121,7 +137,7 @@ export default function RisultatiTurno({
                 <span>Il giornale si sta stampando…</span>
               </div>
             ) : notizie.length === 0 ? (
-              <div className="giornale-vuoto">Nessuna notizia per questo turno.</div>
+              <div className="giornale-vuoto">Nessuna notizia per questa settimana.</div>
             ) : (
               <ul className="giornale-lista">
                 {notizie.map((n) => (
@@ -131,13 +147,10 @@ export default function RisultatiTurno({
             )}
           </section>
         )}
-        {errore && <p className="feedback feedback-error">{errore}</p>}
+
         <div className="referto-actions risultati-actions">
-          <button type="button" className="button button-outline" disabled={annullamento} onClick={() => void tornaIndietro()}>
-            {annullamento ? 'Annullamento…' : '← Torna indietro'}
-          </button>
-          <button type="button" className="button button-primary button-large" onClick={onDashboard}>
-            Torna alla dashboard
+          <button type="button" className="button button-primary button-large" onClick={onCompetizioni}>
+            Tutte le altre competizioni<span>→</span>
           </button>
         </div>
       </section>

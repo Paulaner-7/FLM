@@ -34,7 +34,8 @@ export function proprietaAttivaDi(giocatoreId: Id, assignments: SquadAssignment[
   );
 }
 
-/** Giocatori di movimento (né portieri né giovani) con proprietà attiva nella squadra */
+/** Giocatori di movimento (né portieri né giovani) con proprietà attiva nella squadra.
+ * Conta anche i PRESTITI in entrata: occupano uno slot di rosa (PRD 7.5). */
 export function giocatoriMovimento(
   squadraId: Id,
   giocatori: Giocatore[],
@@ -42,7 +43,7 @@ export function giocatoriMovimento(
 ): Giocatore[] {
   const attivi = new Set(
     assignments
-      .filter((a) => a.squadraId === squadraId && a.tipo === 'proprieta' && assegnazioneAttiva(a))
+      .filter((a) => a.squadraId === squadraId && assegnazioneAttiva(a))
       .map((a) => a.giocatoreId),
   );
   return giocatori.filter(
@@ -52,15 +53,23 @@ export function giocatoriMovimento(
 
 /**
  * Invariante "Unicità del club": un giocatore ha al massimo un club proprietario
- * (più eventuale prestito a un secondo club — logica prestiti in M4).
+ * (più eventuale prestito a un secondo club — PRD 7.5: il prestito è un secondo
+ * club, la proprietà resta al proprietario).
  */
 export function validaUnicitaClub(giocatoreId: Id, assignments: SquadAssignment[]): Verifica {
   const attive = assignments.filter(
     (a) => a.giocatoreId === giocatoreId && a.tipo === 'proprieta' && assegnazioneAttiva(a),
   );
-  return attive.length <= 1
-    ? verificaOk()
-    : verificaKo(`Giocatore ${giocatoreId}: ${attive.length} proprietà attive (massimo 1)`);
+  const prestiti = assignments.filter(
+    (a) => a.giocatoreId === giocatoreId && a.tipo === 'prestito' && assegnazioneAttiva(a),
+  );
+  if (attive.length > 1) {
+    return verificaKo(`Giocatore ${giocatoreId}: ${attive.length} proprietà attive (massimo 1)`);
+  }
+  if (prestiti.length > 1) {
+    return verificaKo(`Giocatore ${giocatoreId}: ${prestiti.length} prestiti attivi (massimo 1)`);
+  }
+  return verificaOk();
 }
 
 /**
@@ -111,6 +120,8 @@ export interface ParametriTrasferimento {
   cifra: number;
   stagione: string;
   settimana: number;
+  /** Giorno della finestra di mercato (opzionale: fuori finestra = test) */
+  giornoMercato?: number;
 }
 
 /** Stato letto dal DB necessario alla validazione (snapshot coerente dentro la transazione) */
@@ -173,6 +184,8 @@ export interface PianoTrasferimento {
   nuovaAssegnazione: SquadAssignment;
   voceLedger: TransferLedgerEntry;
   budgetAggiornato: number;
+  /** Budget del CEDENTE dopo la vendita: incassa la cifra (PRD 7.3, decisione Q3) */
+  budgetCedenteAggiornato: number;
 }
 
 export type EsitoPianificazione =
@@ -189,8 +202,9 @@ export function pianificaTrasferimento(
 
   const giocatore = c.giocatori.find((g) => g.id === p.giocatoreId);
   const a = c.squadre.find((s) => s.id === p.aSquadraId);
+  const da = c.squadre.find((s) => s.id === p.daSquadraId);
   const proprieta = proprietaAttivaDi(p.giocatoreId, c.assignments);
-  if (!giocatore || !a || !proprieta) {
+  if (!giocatore || !a || !proprieta || !da) {
     // Copertura difensiva: validaTrasferimento ha già garantito la presenza
     return { ok: false, errori: ['Stato incoerente durante la pianificazione'] };
   }
@@ -214,9 +228,11 @@ export function pianificaTrasferimento(
         cifra: p.cifra,
         stagione: p.stagione,
         settimana: p.settimana,
+        giornoMercato: p.giornoMercato,
         esito: 'completato',
       },
       budgetAggiornato: a.budget - p.cifra,
+      budgetCedenteAggiornato: da.budget + p.cifra,
     },
   };
 }

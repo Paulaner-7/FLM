@@ -1,0 +1,128 @@
+.deck {
+  display: flex;
+  flex-direction: column;
+}
+
+.titolo {
+  align-items: center;
+  color: var(--paper-muted);
+  display: flex;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  gap: 10px;
+  letter-spacing: 0.16em;
+  margin: 0 0 14px;
+  text-transform: uppercase;
+}
+
+.badge {
+  align-items: center;
+  background: var(--accent);
+  border-radius: 999px;
+  color: var(--on-accent, #0b1722);
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 600;
+  height: 20px;
+  justify-content: center;
+  min-width: 20px;
+  padding: 0 6px;
+}
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--accent);
+  border-radius: 12px;
+  padding: 16px 16px 14px;
+}
+
+.pill {
+  background: color-mix(in srgb, var(--accent) 13%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  border-radius: 999px;
+  color: var(--accent-strong);
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  padding: 3px 9px;
+  text-transform: uppercase;
+}
+
+.cardTitolo {
+  color: var(--paper);
+  display: block;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.25;
+  margin-top: 10px;
+}
+
+.testo {
+  color: var(--paper-muted);
+  font-size: 12.5px;
+  line-height: 1.6;
+  margin: 7px 0 0;
+}
+
+.coinvolti, .limite {
+  color: var(--paper-muted);
+  display: block;
+  font-size: 11px;
+  margin-top: 8px;
+}
+
+.limite { color: var(--danger); }
+
+.azioni {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+/* Pulsanti eleganti: pill, ghost raffinato */
+.primaria, .secondaria {
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  min-height: 34px;
+  padding: 0 16px;
+  text-transform: uppercase;
+  transition: background 180ms ease, border-color 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.primaria {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, transparent);
+  color: var(--accent-strong);
+}
+
+.primaria:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  border-color: var(--accent);
+  color: var(--paper);
+  transform: translateY(-1px);
+}
+
+.secondaria {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--paper-muted);
+}
+
+.secondaria:hover {
+  border-color: var(--paper-muted);
+  color: var(--paper);
+  background: rgba(233, 230, 220, 0.04);
+}

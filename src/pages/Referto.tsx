@@ -1,25 +1,28 @@
-// FLM — Pagina Referto (PRD 3.3: inserimento <60 secondi).
-// Nessuna tastiera: stepper ± per i gol, tap sui giocatori per marcatori,
-// titolari e note. Unico campo "obbligatorio" = il risultato (PRD, sezione rischi).
-
+// FLM — Referto broadcast (PRD 3.3) — stile Carriera hub
 import { useState, type ReactElement } from 'react';
 import { confermaReferto, type EsitoConfermaReferto } from '../db';
 import { XI_TOTALE } from '../engine/referto';
-import type { Competizione, Giocatore, Partita, Squadra } from '../types/entities';
+import HubTopbar from '../components/hub/HubTopbar';
+import { accentiDaColori } from '../components/hub/accento';
+import RefertoScreenshot, { type DatiPrefillScreenshot } from '../components/RefertoScreenshot';
+import styles from './Referto.module.css';
+import type { Competizione, Giocatore, Id, Partita, Squadra } from '../types/entities';
+import { useEffect } from 'react';
 
 export interface DraftReferto {
   golMiei: number;
   golAvversario: number;
-  /** ID marcatori in ordine di tap (ripetuti per ogni gol) */
   marcatori: string[];
   titolari: string[];
   infortunati: string[];
-  prestazioniEccezionali: string[];
   espulsi: string[];
+  prestazioni?: Record<Id, { voto: number }>;
+  autogolAvversari: number;
+  supplementari: boolean;
+  rigori?: { casa: number; trasferta: number };
 }
 
-export type ModalitaNota = 'infortunio' | 'prestazione' | 'espulsione';
-
+export type ModalitaNota = 'infortunio' | 'espulsione';
 type Modalita = 'gol' | 'titolare' | ModalitaNota;
 
 interface RefertoProps {
@@ -42,12 +45,19 @@ const RUOLI_ETICHETTA: Record<string, string> = {
 };
 
 const MODALITA_LABEL: Array<{ id: Modalita; titolo: string; descrizione: string }> = [
-  { id: 'gol', titolo: 'Gol', descrizione: 'Un tap = un gol del giocatore' },
-  { id: 'titolare', titolo: 'Titolare', descrizione: 'Chi è partito in campo (minuti +90)' },
-  { id: 'infortunio', titolo: 'Infortunio', descrizione: 'Stop di 2 settimane' },
-  { id: 'prestazione', titolo: 'Prestazione', descrizione: 'Forma +10' },
-  { id: 'espulsione', titolo: 'Espulsione', descrizione: 'Registrata nelle note' },
+  { id: 'gol', titolo: 'Gol', descrizione: 'Tap = gol' },
+  { id: 'titolare', titolo: 'Titolare', descrizione: 'XI iniziale' },
+  { id: 'infortunio', titolo: 'Infortunio', descrizione: '2 settimane' },
+  { id: 'espulsione', titolo: 'Espulsione', descrizione: 'Note' },
 ];
+
+function eliminazioneDiretta(competizione: Competizione, partita: Partita): boolean {
+  return (
+    competizione.formato === 'eliminazione_diretta' ||
+    competizione.formato === 'partita_secca' ||
+    (competizione.formato === 'league_phase' && partita.fase !== 'league_phase')
+  );
+}
 
 export default function Referto({
   carrieraId,
@@ -64,126 +74,181 @@ export default function Referto({
   const [modalita, setModalita] = useState<Modalita>('gol');
   const [salvataggio, setSalvataggio] = useState(false);
   const [errore, setErrore] = useState<string | null>(null);
+  const [notaOk, setNotaOk] = useState<string | null>(null);
+  const [confermaArmata, setConfermaArmata] = useState(false);
+
+  // accento dinamico
+  useEffect(() => {
+    const root = document.documentElement;
+    const { accent, accentStrong, onAccent } = accentiDaColori(squadra.colori ? { primario: squadra.colori.primario, secondario: squadra.colori.secondario } : undefined);
+    root.style.setProperty('--accent', accent);
+    root.style.setProperty('--accent-strong', accentStrong);
+    root.style.setProperty('--on-accent', onAccent);
+    return () => {
+      root.style.removeProperty('--accent');
+      root.style.removeProperty('--accent-strong');
+      root.style.removeProperty('--on-accent');
+    };
+  }, [squadra.colori]);
 
   const inCasa = partita.casa === squadra.id;
-  const golGiocatore = (id: string): number =>
-    draft.marcatori.filter((m) => m === id).length;
+  const elimDiretta = eliminazioneDiretta(competizione, partita);
+  const pareggio = draft.golMiei === draft.golAvversario;
+  const golGiocatore = (id: string): number => draft.marcatori.filter((m) => m === id).length;
   const totaleMarcatori = draft.marcatori.length;
-  const mismatch = draft.golMiei !== totaleMarcatori;
-
-  const toggleIn = (lista: string[], id: string): string[] =>
-    lista.includes(id) ? lista.filter((x) => x !== id) : [...lista, id];
-
+  const toggleIn = (lista: string[], id: string): string[] => lista.includes(id) ? lista.filter((x) => x !== id) : [...lista, id];
   const toccaGiocatore = (id: string): void => {
     setErrore(null);
     setDraft((d) => {
-      if (modalita === 'gol') {
-        return { ...d, marcatori: [...d.marcatori, id] };
-      }
+      if (modalita === 'gol') return { ...d, marcatori: [...d.marcatori, id] };
       if (modalita === 'titolare') {
-        if (d.titolari.includes(id)) {
-          return { ...d, titolari: d.titolari.filter((x) => x !== id) };
-        }
-        if (d.titolari.length >= XI_TOTALE) return d; // max 11
+        if (d.titolari.includes(id)) return { ...d, titolari: d.titolari.filter((x) => x !== id) };
+        if (d.titolari.length >= XI_TOTALE) return d;
         return { ...d, titolari: [...d.titolari, id] };
       }
-      if (modalita === 'infortunio') {
-        return { ...d, infortunati: toggleIn(d.infortunati, id) };
-      }
-      if (modalita === 'prestazione') {
-        return { ...d, prestazioniEccezionali: toggleIn(d.prestazioniEccezionali, id) };
-      }
+      if (modalita === 'infortunio') return { ...d, infortunati: toggleIn(d.infortunati, id) };
       return { ...d, espulsi: toggleIn(d.espulsi, id) };
     });
   };
-
   const rimuoviGol = (id: string): void => {
     const indice = draft.marcatori.lastIndexOf(id);
     if (indice === -1) return;
     setDraft((d) => ({ ...d, marcatori: d.marcatori.filter((_, i) => i !== indice) }));
   };
-
+  const valida = (): string[] => {
+    const errori: string[] = [];
+    if (draft.titolari.length !== XI_TOTALE) errori.push(`Titolari: devono essere esattamente 11 (trovati ${draft.titolari.length})`);
+    if (totaleMarcatori > draft.golMiei) errori.push(`Marcatori (${totaleMarcatori}) superano i gol segnati (${draft.golMiei})`);
+    if (totaleMarcatori + draft.autogolAvversari !== draft.golMiei) errori.push(`Conto: ${totaleMarcatori} marcatori + ${draft.autogolAvversari} autogol = ${totaleMarcatori + draft.autogolAvversari}, attesi ${draft.golMiei} gol`);
+    if (elimDiretta && pareggio && !draft.rigori) errori.push('Eliminazione diretta in pareggio: indica rigori');
+    if (draft.rigori && draft.rigori.casa === draft.rigori.trasferta) errori.push('Rigori: serve vincitrice');
+    return errori;
+  };
   const conferma = async (): Promise<void> => {
-    setSalvataggio(true);
-    setErrore(null);
+    const errori = valida();
+    if (errori.length > 0) { setErrore(errori.join(' · ')); return; }
+    setSalvataggio(true); setErrore(null);
     try {
       const esito = await confermaReferto({
-        carrieraId,
-        partitaId: partita.id,
-        golMiei: draft.golMiei,
-        golAvversario: draft.golAvversario,
-        marcatori: draft.marcatori,
-        titolari: draft.titolari,
-        infortunati: draft.infortunati,
-        prestazioniEccezionali: draft.prestazioniEccezionali,
-        espulsi: draft.espulsi,
+        carrieraId, partitaId: partita.id,
+        golMiei: draft.golMiei, golAvversario: draft.golAvversario,
+        marcatori: draft.marcatori, titolari: draft.titolari,
+        infortunati: draft.infortunati, espulsi: draft.espulsi,
+        prestazioni: draft.prestazioni, autogolAvversari: draft.autogolAvversari,
+        supplementari: draft.supplementari, rigori: draft.rigori,
       });
       onConfermato(esito);
     } catch (e) {
-      setErrore(e instanceof Error ? e.message : 'Errore durante il salvataggio del referto');
+      setErrore(e instanceof Error ? e.message : 'Errore salvataggio referto');
       setSalvataggio(false);
     }
   };
+  const applicaScreenshot = (dati: DatiPrefillScreenshot): void => {
+    setErrore(null); setNotaOk(null);
+    const quanti = Object.keys(dati.prestazioni).length;
+    setDraft((d) => ({ ...d, prestazioni: { ...(d.prestazioni ?? {}), ...dati.prestazioni } }));
+    setNotaOk(quanti === 1 ? 'Voto applicato a 1 giocatore: controlla i badge.' : `Voti applicati a ${quanti} giocatori.`);
+    if (dati.nonMappati.length > 0) setErrore(`Non riconosciuti: ${dati.nonMappati.join(', ')}`);
+  };
+
+  const faseLeggibile = partita.fase === 'andata' || partita.fase === 'ritorno' ? `giornata ${partita.giornata}` : partita.fase.replace(/_/g, ' ');
+  const gambaLabel = partita.gamba === 1 ? ' · andata' : partita.gamba === 2 ? ' · ritorno' : '';
 
   return (
     <main className="page-shell">
-      <header className="topbar">
-        <button className="brand-button" type="button" onClick={onAnnulla}>FLM <span>/ Referto</span></button>
-        <div className="topbar-actions">
-          <span className="topbar-note">{competizione.nome} · giornata {partita.giornata}</span>
-        </div>
-      </header>
+      <HubTopbar
+        sezione="Referto"
+        onBrand={onAnnulla}
+        onStorico={() => {}}
+        onEsporta={() => {}}
+        onHome={onAnnulla}
+        squadra={{ nome: squadra.nome, nazione: squadra.nazione, colori: squadra.colori }}
+      />
 
-      <section className="content-wrap referto-page">
-        <p className="eyebrow">Partita da giocare in FL26</p>
-        <h1>Referto</h1>
-
-        {/* Scheda partita */}
-        <div className="match-card">
-          <div className={`match-team ${inCasa ? 'match-team-user' : ''}`}>
-            <span className="match-side-label">{inCasa ? 'Casa' : 'Trasferta'}</span>
-            <strong>{inCasa ? squadra.nome : avversaria.nome}</strong>
-            <small>Potenza {inCasa ? squadra.rating : avversaria.rating}</small>
-          </div>
-          <div className="match-versus">VS</div>
-          <div className={`match-team ${inCasa ? '' : 'match-team-user'}`}>
-            <span className="match-side-label">{inCasa ? 'Trasferta' : 'Casa'}</span>
-            <strong>{inCasa ? avversaria.nome : squadra.nome}</strong>
-            <small>Potenza {inCasa ? avversaria.rating : squadra.rating}</small>
-          </div>
+      <div className={styles.hub}>
+        <div className={styles.heading}>
+          <p className="eyebrow">Partita da giocare in FL26 · {competizione.nome} · {faseLeggibile}{gambaLabel}{partita.neutra ? ' · neutro' : ''}</p>
+          <h1>Referto</h1>
+          <p>Inserisci il risultato in meno di 60 secondi. Stepper per i gol, tap sui giocatori per marcatori e XI. L&apos;immissione è definitiva.</p>
         </div>
 
-        {/* Risultato: stepper senza tastiera */}
-        <div className="score-panel">
-          <div className="score-side">
-            <span className="score-label">I tuoi gol</span>
-            <div className="score-stepper">
-              <button type="button" aria-label="Togli un gol" disabled={draft.golMiei <= 0}
-                onClick={() => setDraft((d) => ({ ...d, golMiei: Math.max(0, d.golMiei - 1) }))}>−</button>
+        <RefertoScreenshot giocatori={giocatori} squadraNome={squadra.nome} onApplica={applicaScreenshot} />
+
+        <div className={styles.matchCard}>
+          <div className={styles.team}>
+            <span className={styles.teamLabel}>{inCasa ? 'Casa · Tu' : 'Trasferta · Tu'}</span>
+            <strong className={styles.teamName}>{inCasa ? squadra.nome : avversaria.nome}</strong>
+            <small className={styles.teamMeta}>Rating {inCasa ? squadra.rating : avversaria.rating}</small>
+          </div>
+          <div className={styles.vs}>VS</div>
+          <div className={styles.team} style={{ alignItems: inCasa ? 'flex-end' : 'flex-start', textAlign: inCasa ? 'right' : 'left' }}>
+            <span className={styles.teamLabel}>{inCasa ? 'Trasferta' : 'Casa'}</span>
+            <strong className={styles.teamName}>{inCasa ? avversaria.nome : squadra.nome}</strong>
+            <small className={styles.teamMeta}>Rating {inCasa ? avversaria.rating : squadra.rating}</small>
+          </div>
+        </div>
+
+        <div className={styles.scoreGrid}>
+          <div className={styles.scoreCard}>
+            <span className={styles.scoreLabel}>I tuoi gol</span>
+            <div className={styles.stepper}>
+              <button type="button" aria-label="Togli gol" disabled={draft.golMiei <= 0} onClick={() => setDraft((d) => ({ ...d, golMiei: Math.max(0, d.golMiei - 1) }))}>−</button>
               <strong>{draft.golMiei}</strong>
-              <button type="button" aria-label="Aggiungi un gol" disabled={draft.golMiei >= 30}
-                onClick={() => setDraft((d) => ({ ...d, golMiei: d.golMiei + 1 }))}>+</button>
+              <button type="button" aria-label="Aggiungi gol" disabled={draft.golMiei >= 30} onClick={() => setDraft((d) => ({ ...d, golMiei: d.golMiei + 1 }))}>+</button>
             </div>
           </div>
-          <div className="score-side">
-            <span className="score-label">Gol avversario</span>
-            <div className="score-stepper">
-              <button type="button" aria-label="Togli un gol avversario" disabled={draft.golAvversario <= 0}
-                onClick={() => setDraft((d) => ({ ...d, golAvversario: Math.max(0, d.golAvversario - 1) }))}>−</button>
+          <div className={styles.scoreCard}>
+            <span className={styles.scoreLabel}>Gol avversario</span>
+            <div className={styles.stepper}>
+              <button type="button" aria-label="Togli gol avv" disabled={draft.golAvversario <= 0} onClick={() => setDraft((d) => ({ ...d, golAvversario: Math.max(0, d.golAvversario - 1) }))}>−</button>
               <strong>{draft.golAvversario}</strong>
-              <button type="button" aria-label="Aggiungi un gol avversario" disabled={draft.golAvversario >= 30}
-                onClick={() => setDraft((d) => ({ ...d, golAvversario: d.golAvversario + 1 }))}>+</button>
+              <button type="button" aria-label="Aggiungi gol avv" disabled={draft.golAvversario >= 30} onClick={() => setDraft((d) => ({ ...d, golAvversario: d.golAvversario + 1 }))}>+</button>
+            </div>
+          </div>
+          <div className={styles.scoreCard}>
+            <span className={styles.scoreLabel}>Autogol avversari</span>
+            <div className={styles.stepper}>
+              <button type="button" aria-label="Togli autogol" disabled={draft.autogolAvversari <= 0} onClick={() => setDraft((d) => ({ ...d, autogolAvversari: Math.max(0, d.autogolAvversari - 1) }))}>−</button>
+              <strong>{draft.autogolAvversari}</strong>
+              <button type="button" aria-label="Aggiungi autogol" disabled={draft.autogolAvversari >= 30} onClick={() => setDraft((d) => ({ ...d, autogolAvversari: d.autogolAvversari + 1 }))}>+</button>
             </div>
           </div>
         </div>
 
-        {/* Modalità tap */}
-        <div className="mode-row" role="group" aria-label="Modalità tap sui giocatori">
+        {elimDiretta && (
+          <div className={styles.koCard}>
+            <p className={styles.koHead}>Eliminazione diretta</p>
+            <label className={styles.koToggle}>
+              <input type="checkbox" checked={draft.supplementari} onChange={(e) => setDraft((d) => ({ ...d, supplementari: e.target.checked }))} />
+              <span>Supplementari giocati</span>
+            </label>
+            <div className={styles.koGrid}>
+              <div className={styles.scoreCard}>
+                <span className={styles.scoreLabel}>Rigori casa</span>
+                <div className={styles.stepper}>
+                  <button type="button" disabled={(draft.rigori?.casa ?? 0) <= 0} onClick={() => setDraft((d) => ({ ...d, rigori: { casa: Math.max(0, (d.rigori?.casa ?? 0) - 1), trasferta: d.rigori?.trasferta ?? 0 } }))}>−</button>
+                  <strong>{draft.rigori?.casa ?? 0}</strong>
+                  <button type="button" onClick={() => setDraft((d) => ({ ...d, rigori: { casa: (d.rigori?.casa ?? 0) + 1, trasferta: d.rigori?.trasferta ?? 0 } }))}>+</button>
+                </div>
+              </div>
+              <div className={styles.scoreCard}>
+                <span className={styles.scoreLabel}>Rigori trasferta</span>
+                <div className={styles.stepper}>
+                  <button type="button" disabled={(draft.rigori?.trasferta ?? 0) <= 0} onClick={() => setDraft((d) => ({ ...d, rigori: { casa: d.rigori?.casa ?? 0, trasferta: Math.max(0, (d.rigori?.trasferta ?? 0) - 1) } }))}>−</button>
+                  <strong>{draft.rigori?.trasferta ?? 0}</strong>
+                  <button type="button" onClick={() => setDraft((d) => ({ ...d, rigori: { casa: d.rigori?.casa ?? 0, trasferta: (d.rigori?.trasferta ?? 0) + 1 } }))}>+</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className={styles.modeRow} role="group" aria-label="Modalità tap">
           {MODALITA_LABEL.map((m) => (
             <button
               key={m.id}
               type="button"
-              className={`mode-chip ${modalita === m.id ? 'mode-chip-active' : ''}`}
+              className={`${styles.modeChip} ${modalita === m.id ? styles.modeActive : ''}`}
               onClick={() => setModalita(m.id)}
             >
               <strong>{m.titolo}</strong>
@@ -192,37 +257,33 @@ export default function Referto({
           ))}
         </div>
 
-        {/* Rosa: tap = azione della modalità attiva */}
-        <div className="player-grid" role="list" aria-label="Rosa">
+        <div className={styles.grid} role="list" aria-label="Rosa">
           {giocatori.map((g) => {
             const gol = golGiocatore(g.id);
             const titolare = draft.titolari.includes(g.id);
-            const infortunio = draft.infortunati.includes(g.id);
-            const prestazione = draft.prestazioniEccezionali.includes(g.id);
-            const espulso = draft.espulsi.includes(g.id);
+            const inf = draft.infortunati.includes(g.id);
+            const esp = draft.espulsi.includes(g.id);
+            const voto = draft.prestazioni?.[g.id]?.voto;
+            const tileClass = `${styles.tile} ${modalita === 'titolare' && titolare ? styles.tileTitolare : ''} ${inf ? styles.tileInfortunio : ''} ${esp ? styles.tileEspulso : ''}`;
             return (
-              <div
-                key={g.id}
-                role="listitem"
-                className={`player-tile ${modalita === 'titolare' && titolare ? 'player-tile-titolare' : ''} ${infortunio ? 'player-tile-infortunio' : ''} ${prestazione ? 'player-tile-prestazione' : ''} ${espulso ? 'player-tile-espulso' : ''}`}
-              >
-                <button type="button" className="player-tile-main" onClick={() => toccaGiocatore(g.id)}>
-                  <span className="role-tag">{RUOLI_ETICHETTA[g.ruolo] ?? g.ruolo}</span>
-                  <span className="player-tile-nome">
+              <div key={g.id} role="listitem" className={tileClass}>
+                <button type="button" className={styles.tileMain} onClick={() => toccaGiocatore(g.id)}>
+                  <span className={styles.roleTag}>{RUOLI_ETICHETTA[g.ruolo] ?? g.ruolo.slice(0,3).toUpperCase()}</span>
+                  <span className={styles.nome}>
                     <strong>{g.nome}</strong>
-                    <small>Overall {g.overall}</small>
+                    <small>OVR {g.overall}</small>
                   </span>
-                  <span className="overall-mini">{g.overall}</span>
+                  <span className={styles.overall}>{g.overall}</span>
                 </button>
-                <div className="player-tile-badge">
-                  {titolare && <span className="badge badge-xi">XI</span>}
-                  {infortunio && <span className="badge badge-inf">INF</span>}
-                  {prestazione && <span className="badge badge-pre">★</span>}
-                  {espulso && <span className="badge badge-esp">ESP</span>}
+                <div className={styles.badges}>
+                  {titolare && <span className={`${styles.badge} ${styles.badgeXi}`}>XI</span>}
+                  {inf && <span className={`${styles.badge} ${styles.badgeInf}`}>INF</span>}
+                  {esp && <span className={`${styles.badge} ${styles.badgeEsp}`}>ESP</span>}
+                  {voto !== undefined && <span className={`${styles.badge} ${styles.badgeVoto}`}>{voto.toFixed(1)}</span>}
                   {gol > 0 && (
-                    <span className="badge badge-gol">
+                    <span className={`${styles.badge} ${styles.badgeGol}`}>
                       {gol}
-                      <button type="button" aria-label="Togli un gol" onClick={() => rimuoviGol(g.id)}>×</button>
+                      <button type="button" aria-label="Togli gol" onClick={() => rimuoviGol(g.id)}>×</button>
                     </span>
                   )}
                 </div>
@@ -231,27 +292,34 @@ export default function Referto({
           })}
         </div>
 
-        {/* Stato selezione + avviso morbido */}
-        <div className="referto-footer">
-          <p className="referto-hint">
-            Titolari {draft.titolari.length}/11 · Marcatori {totaleMarcatori}/{draft.golMiei}
+        <div className={styles.footer}>
+          <p className={styles.hint}>
+            Titolari {draft.titolari.length}/11 · Marcatori {totaleMarcatori} + autogol {draft.autogolAvversari} = {totaleMarcatori + draft.autogolAvversari}/{draft.golMiei}
+            {draft.prestazioni && Object.keys(draft.prestazioni).length > 0 && <> · Voti {Object.keys(draft.prestazioni).length}</>}
           </p>
-          {mismatch && (
-            <p className="feedback feedback-warn">
-              {totaleMarcatori < draft.golMiei
-                ? `Mancano ${draft.golMiei - totaleMarcatori} marcatori (facoltativo)`
-                : `${totaleMarcatori - draft.golMiei} gol marcati senza gol nel risultato (facoltativo)`}
-            </p>
-          )}
-          {errore && <p className="feedback feedback-error">{errore}</p>}
-          <div className="referto-actions">
-            <button type="button" className="button button-outline" onClick={onAnnulla}>Annulla</button>
-            <button type="button" className="button button-primary button-large" disabled={salvataggio} onClick={() => void conferma()}>
-              {salvataggio ? 'Salvataggio…' : 'Conferma referto'}
+          {notaOk && <p className={styles.feedbackOk} role="status">{notaOk}</p>}
+          {errore && <p className={styles.feedbackErr} role="alert">{errore}</p>}
+          {confermaArmata && !errore && <p className={styles.feedbackWarn}>Invio definitivo: dopo l&apos;invio non potrai modificare questo referto.</p>}
+          <div className={styles.actions}>
+            <button
+              type="button"
+              className={styles.cta}
+              disabled={salvataggio}
+              onClick={() => {
+                if (!confermaArmata) {
+                  const errori = valida();
+                  setErrore(errori.length > 0 ? errori.join(' · ') : null);
+                  if (errori.length === 0) setConfermaArmata(true);
+                  return;
+                }
+                void conferma();
+              }}
+            >
+              {salvataggio ? 'Salvataggio…' : confermaArmata ? 'Conferma: invio definitivo' : 'Invio definitivo'}
             </button>
           </div>
         </div>
-      </section>
+      </div>
     </main>
   );
 }

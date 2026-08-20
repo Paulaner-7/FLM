@@ -9,16 +9,26 @@
 
 import type { Giocatore, Id, Partita, Squadra } from '../types/entities';
 import { RUOLO_PORTIERE } from './invariants';
+import { normalizzaNome } from './eventi';
 import { hashString, poisson, prng } from './random';
 import {
+  BONUS_FORMA_ASSIST,
+  BONUS_FORMA_GOL,
+  BONUS_FORMA_PRESTAZIONE,
   BONUS_FORMA_STREAK,
+  CAP_FORMA_PARTITA,
   CAP_FORMA_STREAK,
   DIVISORE_SCARTO_RATING,
+  FIDUCIA_MINUTI_PANCHINA,
+  FIDUCIA_MINUTI_TITOLARE,
   GOL_MEDIA_SQUADRA,
+  K_VOTO_GIU,
+  K_VOTO_SU,
   MINUTI_PARTITA,
   REVERSIONE_DRIFT,
   SCARTO_STAGIONALE,
   VANTAGGIO_CASA_GOL,
+  VOTO_NEUTRO,
 } from './rules';
 
 export const RUOLI_CAMPO = ['difensore', 'centrocampista', 'attaccante'] as const;
@@ -173,8 +183,19 @@ export function testoNoteReferto(parti: {
   espulsi: string[];
   infortunati: string[];
   prestazioni: string[];
+  /** Marcatori con minuti (dallo screenshot risultato): solo narrativa, nessun campo dedicato */
+  marcatori?: Array<{ nome: string; minuti: number[] }>;
 }): string | undefined {
   const frasi: string[] = [];
+  if (parti.marcatori && parti.marcatori.length > 0) {
+    frasi.push(
+      'Marcatori: ' +
+        parti.marcatori
+          .map((m) => (m.minuti.length > 0 ? `${m.nome} ${m.minuti.map((x) => `${x}'`).join(', ')}` : m.nome))
+          .join('; ') +
+        '.',
+    );
+  }
   if (parti.espulsi.length > 0) {
     frasi.push(parti.espulsi.length === 1 ? `Espulso: ${parti.espulsi[0]}.` : `Espulsi: ${parti.espulsi.join(', ')}.`);
   }
@@ -191,4 +212,129 @@ export function testoNoteReferto(parti: {
     );
   }
   return frasi.length > 0 ? frasi.join(' ') : undefined;
+}
+
+// ---------------------------------------------------------------------------
+// Referto da screenshot (PRD 7.4): regole pure voto → forma e minuti → fiducia
+// ---------------------------------------------------------------------------
+
+/**
+ * Delta forma dal voto PES (4.0-10.0): lineare col punto neutro VOTO_NEUTRO,
+ * moltiplicatore asimmetrico (penalità 1.5× sotto il neutro).
+ */
+export function deltaFormaDaVoto(voto: number): number {
+  if (!Number.isFinite(voto)) return 0;
+  return voto >= VOTO_NEUTRO
+    ? Math.round((voto - VOTO_NEUTRO) * K_VOTO_SU)
+    : Math.round((voto - VOTO_NEUTRO) * K_VOTO_GIU);
+}
+
+/** Bonus forma da gol/assist, cappato a CAP_FORMA_PARTITA per partita. */
+export function bonusFormaGolAssist(gol: number, assist: number): number {
+  const bonus = Math.max(0, gol) * BONUS_FORMA_GOL + Math.max(0, assist) * BONUS_FORMA_ASSIST;
+  return Math.min(CAP_FORMA_PARTITA, bonus);
+}
+
+/**
+ * Delta forma totale per giocatore in una partita (decisione con l'utente):
+ * - voto presente (da screenshot) → formula dal voto + bonus gol/assist, cap 15
+ * - voto assente ma tap "prestazione eccezionale" → +BONUS_FORMA_PRESTAZIONE
+ *   (coincidenza voluta: con la formula, +10 equivale a voto 9.0)
+ * - solo marcatori manuali → bonus gol (+3 ciascuno, senza cap per-gol)
+ */
+export function deltaFormaGiocatore(input: {
+  voto?: number;
+  gol: number;
+  assist: number;
+  prestazioneTappata: boolean;
+}): number {
+  if (input.voto !== undefined) {
+    return Math.min(
+      CAP_FORMA_PARTITA,
+      deltaFormaDaVoto(input.voto) + bonusFormaGolAssist(input.gol, input.assist),
+    );
+  }
+  if (input.prestazioneTappata) return BONUS_FORMA_PRESTAZIONE;
+  if (input.gol > 0) return bonusFormaGolAssist(input.gol, 0);
+  return 0;
+}
+
+/**
+ * Δ fiducia del giocatore dai minuti della partita (PRD 7.4): titolare +1,
+ * non titolare −1, infortunati esenti (non possono giocare, non è colpa loro).
+ */
+export function deltaFiduciaDaMinuti(input: { titolare: boolean; infortunato: boolean }): number {
+  if (input.infortunato) return 0;
+  return input.titolare ? FIDUCIA_MINUTI_TITOLARE : FIDUCIA_MINUTI_PANCHINA;
+}
+
+/**
+ * Mappa i nomi estratti dallo screenshot ai giocatori della rosa (PRD 7.4).
+ * Passo 1: match esatto normalizzato; passo 2: fuzzy (Levenshtein ≤ 2);
+ * passo 3: parola condivisa lunga ≥ 3 (cognome). Ritorna id se il match è
+ * univoco, altrimenti null (assente o ambiguo: la UI chiede la correzione).
+ */
+export function mappaNomiRosa(nomiEstratti: string[], rosa: Giocatore[]): Map<string, Id | null> {
+  const candidati = rosa.map((g) => ({ id: g.id, nome: normalizzaNome(g.nome) }));
+  const risultato = new Map<string, Id | null>();
+  for (const estratto of nomiEstratti) {
+    const e = normalizzaNome(estratto);
+    if (!e) {
+      risultato.set(estratto, null);
+      continue;
+    }
+    const esatti = candidati.filter((c) => c.nome === e);
+    if (esatti.length === 1) {
+      risultato.set(estratto, esatti[0]!.id);
+      continue;
+    }
+    if (esatti.length > 1) {
+      risultato.set(estratto, null);
+      continue;
+    }
+    const fuzzy = candidati.filter((c) => distanzaLevenshtein(c.nome, e) <= 2);
+    if (fuzzy.length === 1) {
+      risultato.set(estratto, fuzzy[0]!.id);
+      continue;
+    }
+    if (fuzzy.length > 1) {
+      risultato.set(estratto, null);
+      continue;
+    }
+    // Parola condivisa: il cognome è il caso tipico (schermata FL26 vs rosa
+    // completa). Match esatto di parola (len ≥ 3) o fuzzy ≤ 1 sulla parola.
+    const paroleE = e.split(' ');
+    const contenuti = candidati.filter((c) => {
+      const paroleC = c.nome.split(' ');
+      return paroleE.some(
+        (p) => p.length >= 3 && paroleC.some((q) => q === p || distanzaLevenshtein(q, p) <= 1),
+      );
+    });
+    if (contenuti.length === 1) {
+      risultato.set(estratto, contenuti[0]!.id);
+      continue;
+    }
+    risultato.set(estratto, null);
+  }
+  return risultato;
+}
+
+/** Distanza di Levenshtein (iterativa, per nomi corti va benissimo). */
+export function distanzaLevenshtein(a: string, b: string): number {
+  if (a === b) return 0;
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+  let rigaPrecedente: number[] = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const riga = [i];
+    for (let j = 1; j <= b.length; j++) {
+      riga.push(Math.min(
+        riga[j - 1]! + 1,
+        rigaPrecedente[j]! + 1,
+        rigaPrecedente[j - 1]! + (a[i - 1] === b[j - 1] ? 0 : 1),
+      ));
+    }
+    rigaPrecedente = riga;
+  }
+  return rigaPrecedente[b.length]!;
 }

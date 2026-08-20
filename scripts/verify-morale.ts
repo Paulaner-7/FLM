@@ -9,7 +9,7 @@ import 'fake-indexeddb/auto';
 import { db } from '../src/db/database';
 import { seedDemo } from '../src/db/seed';
 import { creaPromessa, decidiRichiestaPromessa, promesseAttive, setLeader } from '../src/db/morale';
-import { annullaReferto, confermaReferto, prossimaPartita, rosaDellaCarriera } from '../src/db/referti';
+import { confermaReferto, prossimaPartita, rosaDellaCarriera } from '../src/db';
 import {
   candidatoRichiestaPromessa,
   effettiMoraleReferto,
@@ -23,6 +23,7 @@ import { xiDefault } from '../src/engine/referto';
 import {
   BONUS_MARCATORE_MORALE,
   EFFETTO_VITTORIA_MORALE,
+  FIDUCIA_MINUTI_PANCHINA,
   LEADER_MAX,
   PANCHINA_PROMESSO_MORALE,
   PROMESSA_DURATA_DEFAULT,
@@ -232,7 +233,7 @@ async function testDb(): Promise<void> {
   // Conferma giornata 1 (vittoria 2-1): morale titolari +5, marcatori +7, snapshot
   const xi1 = xiDefault(rosa);
   const moralePrima = new Map(rosa.map((g) => [g.id, g.morale]));
-  let prossima = await prossimaPartita(squadra.id, competizione.id);
+  let prossima = await prossimaPartita(carriera.id, squadra.id);
   if (!prossima) throw new Error('Nessuna partita');
   const marcatori = xi1.slice(0, 2);
   const esito1 = await confermaReferto({
@@ -260,16 +261,10 @@ async function testDb(): Promise<void> {
     mMarcatore !== undefined && mMarcatore.morale === moralePrima.get(marcatori[0]!)! + EFFETTO_VITTORIA_MORALE + BONUS_MARCATORE_MORALE,
     `${moralePrima.get(marcatori[0]!)} → ${mMarcatore?.morale}`,
   );
-  check(
-    'referto: snapshot statoPrima con giocatori toccati',
-    esito1.partita.statoPrima !== undefined &&
-      esito1.partita.statoPrima.giocatori[marcatori[0]!] !== undefined &&
-      esito1.partita.statoPrima.eventiCreati.length === 0,
-    `eventiCreati: ${esito1.partita.statoPrima?.eventiCreati.length}`,
-  );
+  // Referto immutabile: lo snapshot statoPrima non esiste più (decisione utente).
 
   // Conferma giornata 2: nasce la richiesta promessa (1 partita giocata, riserve under 75+ a 0 minuti)
-  prossima = await prossimaPartita(squadra.id, competizione.id);
+  prossima = await prossimaPartita(carriera.id, squadra.id);
   if (!prossima) throw new Error('Nessuna partita 2');
   const xi2 = xiDefault(rosa);
   await confermaReferto({
@@ -327,7 +322,7 @@ async function testDb(): Promise<void> {
     const fiduciaBase = base?.fiducia ?? 50;
     const malusPanchina = tipoProposto === 'titolare' ? PANCHINA_PROMESSO_MORALE : 0;
     for (let g = 3; g <= 6; g++) {
-      const p = await prossimaPartita(squadra.id, competizione.id);
+      const p = await prossimaPartita(carriera.id, squadra.id);
       if (!p) throw new Error(`Nessuna partita ${g}`);
       let xi = xiDefault(rosa);
       if (xi.includes(idCandidato)) {
@@ -350,21 +345,24 @@ async function testDb(): Promise<void> {
     }
     const dopoScadenza = await db.giocatori.get(idCandidato);
     const tradita = dopoScadenza?.promesse.find((p) => p.stato === 'tradita');
+    // Regola PRD 7.4: ogni partita da non titolare muove la fiducia di −1
+    // (FIDUCIA_MINUTI_PANCHINA): 4 partite in panchina = −4.
     const attese = {
       morale: moraleBase + malusPanchina * 4 + PROMESSA_TRADITA_MORALE,
-      fiducia: fiduciaBase + PROMESSA_TRADITA_FIDUCIA,
+      fiducia: fiduciaBase + PROMESSA_TRADITA_FIDUCIA + 4 * FIDUCIA_MINUTI_PANCHINA,
     };
     check(
-      `promessa: tradita a scadenza (${malusPanchina * 4} panchina + ${PROMESSA_TRADITA_MORALE} morale, ${PROMESSA_TRADITA_FIDUCIA} fiducia)`,
+      `promessa: tradita a scadenza (${malusPanchina * 4} panchina + ${PROMESSA_TRADITA_MORALE} morale, ${PROMESSA_TRADITA_FIDUCIA} fiducia + 4×${FIDUCIA_MINUTI_PANCHINA} panchina)`,
       tradita !== undefined &&
         dopoScadenza?.morale === attese.morale &&
         dopoScadenza?.fiducia === attese.fiducia,
       `${moraleBase}/${fiduciaBase} → ${dopoScadenza?.morale}/${dopoScadenza?.fiducia} (atteso ${attese.morale}/${attese.fiducia})`,
     );
     // Bersaglio del rollback: valori dopo la giornata 5 (prima della 6)
+    // (3 panchine: −3 fiducia)
     const bersaglioRollback = {
       morale: (dopoScadenza?.morale ?? 0) - malusPanchina - PROMESSA_TRADITA_MORALE,
-      fiducia: (dopoScadenza?.fiducia ?? 0) - PROMESSA_TRADITA_FIDUCIA,
+      fiducia: (dopoScadenza?.fiducia ?? 0) - PROMESSA_TRADITA_FIDUCIA - FIDUCIA_MINUTI_PANCHINA,
     };
 
     // Rollback della giornata 6: promessa torna attiva, morale/fiducia ripristinati
@@ -374,15 +372,25 @@ async function testDb(): Promise<void> {
       .toArray();
     const partita6 = ultima.find((p) => p.giornata === 6 && (p.casa === squadra.id || p.trasferta === squadra.id));
     if (partita6) {
-      await annullaReferto({ carrieraId: carriera.id, partitaId: partita6.id });
+      {
+      let immutabile = false;
+      try {
+        await confermaReferto({ carrieraId: carriera.id, partitaId: partita6.id, golMiei: 0, golAvversario: 0, marcatori: [], titolari: titolari ?? [], infortunati: [], espulsi: [], autogolAvversari: 0 });
+      } catch {
+        immutabile = true;
+      }
+      check('referto immutabile: riconferma rifiutata', immutabile);
+    }
+      // Referto immutabile (decisione utente): dopo la tentata riconferma lo
+      // stato NON deve tornare indietro — la promessa resta tradita.
       const ripristinato = await db.giocatori.get(idCandidato);
       const attivaDiNuovo = ripristinato?.promesse.find((p) => p.stato === 'attiva');
       check(
-        'annulla: promessa riattivata e morale/fiducia ripristinati',
-        attivaDiNuovo !== undefined &&
-          ripristinato?.morale === bersaglioRollback.morale &&
-          ripristinato?.fiducia === bersaglioRollback.fiducia,
-        `atteso ${bersaglioRollback.morale}/${bersaglioRollback.fiducia} → ${ripristinato?.morale}/${ripristinato?.fiducia}`,
+        'immutabile: promessa resta tradita, stato invariato',
+        attivaDiNuovo === undefined &&
+          ripristinato?.morale === dopoScadenza?.morale &&
+          ripristinato?.fiducia === dopoScadenza?.fiducia,
+        `${dopoScadenza?.morale}/${dopoScadenza?.fiducia} → ${ripristinato?.morale}/${ripristinato?.fiducia}`,
       );
       const eventi6 = (await db.eventi.where('carrieraId').equals(carriera.id).toArray()).filter(
         (e) => e.promessaProposta && e.settimana === 6,

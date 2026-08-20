@@ -1,0 +1,146 @@
+.topbar {
+  align-items: center;
+  background: rgba(11, 23, 34, 0.88);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  min-height: 60px;
+  padding: 0 clamp(16px, 3vw, 40px);
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.topbar:has(.logoStrip) {
+  min-height: 64px;
+}
+
+.brand {
+  background: transparent;
+  border: 0;
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  padding: 10px 0;
+  text-transform: uppercase;
+}
+
+.brand span {
+  color: var(--paper-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+}
+
+.actions {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.kebabWrap { position: relative; }
+
+.kebab {
+  align-items: center;
+  background: rgba(233, 230, 220, 0.06);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--paper);
+  display: inline-flex;
+  font-size: 18px;
+  height: 36px;
+  justify-content: center;
+  letter-spacing: 2px;
+  transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
+  width: 36px;
+}
+
+.kebab:hover { background: rgba(233, 230, 220, 0.11); border-color: var(--line); transform: translateY(-1px); }
+
+.menu {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  padding: 6px;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+}
+
+.menu button {
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--paper-muted);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  min-height: 40px;
+  padding: 0 12px;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.menu button:hover { background: rgba(233, 230, 220, 0.06); color: var(--paper); }
+
+.logoStrip {
+  display: flex;
+  justify-content: center;
+  left: 50%;
+  pointer-events: none;
+  position: absolute;
+  top: 100%;
+  transform: translate(-50%, -50%);
+  z-index: 31;
+}
+
+.logoButton {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+  display: block;
+  padding: 0;
+  pointer-events: auto;
+}
+
+.logoClub {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  display: block;
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.55)) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
+  height: 92px;
+  object-fit: contain;
+  padding: 0;
+  width: 92px;
+  transition: transform 160ms ease, filter 160ms ease;
+}
+
+.logoButton:hover .logoClub {
+  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.65)) drop-shadow(0 3px 8px rgba(0, 0, 0, 0.5));
+  transform: scale(1.04);
+}
+
+.logoButton:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+@media (max-width: 640px) {
+  .brand span { display: none; }
+  .logoClub {
+    height: 76px;
+    width: 76px;
+  }
+}

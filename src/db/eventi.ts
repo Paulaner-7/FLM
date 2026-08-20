@@ -273,14 +273,8 @@ export async function generaContenutiTurno(input: { carrieraId: Id; partitaId: I
       notizieSalvate.push(notizia);
     }
 
-    await db.partite.put({
-      ...riletta,
-      contenutiGeneratiDopoReferto: {
-        eventi: salvati.map((e) => e.id),
-        notizie: notizieSalvate.map((n) => n.id),
-      },
-    });
-
+    // Referto immutabile (decisione utente): niente rollback, i contenuti
+    // generati restano nell'archivio senza tracciamento sulla partita.
     return { eventi: salvati, notizie: notizieSalvate, scartata: false };
   });
 }
@@ -333,6 +327,7 @@ function concretezzaTemplate(
       testo: sostituisci(o.testo),
       effettiProposti: {
         moraleGiocatori: clamp(o.effettiProposti.moraleGiocatori, -10, 10),
+        fiduciaGiocatori: clamp(o.effettiProposti.fiduciaGiocatori, -10, 10),
         fiduciaSocieta: clamp(o.effettiProposti.fiduciaSocieta, -10, 10),
         fiduciaTifosi: clamp(o.effettiProposti.fiduciaTifosi, -10, 10),
         reputazione: clamp(o.effettiProposti.reputazione, -10, 10),

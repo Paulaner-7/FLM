@@ -1,0 +1,75 @@
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.blocco {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  flex: 1;
+  padding: 18px 20px;
+}
+
+.bloccoObiettivo { border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+
+.testa {
+  align-items: baseline;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.label {
+  color: var(--paper-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.numero {
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.numero em {
+  color: var(--paper-muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 400;
+  margin-left: 4px;
+}
+
+.barra {
+  background: rgba(233, 230, 220, 0.1);
+  border-radius: 999px;
+  display: block;
+  height: 5px;
+  margin: 14px 0 10px;
+  overflow: hidden;
+}
+
+.fill {
+  border-radius: 999px;
+  display: block;
+  height: 100%;
+  transition: width 300ms ease;
+}
+
+.accent { background: var(--accent); }
+.mint { background: var(--mint); }
+.paper { background: var(--paper); }
+
+.nota {
+  color: var(--paper-muted);
+  display: block;
+  font-size: 11px;
+  line-height: 1.5;
+}

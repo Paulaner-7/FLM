@@ -1,0 +1,118 @@
+.grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+.tile {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  color: var(--paper);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 140px;
+  padding: 18px;
+  position: relative;
+  text-align: left;
+  overflow: hidden;
+  transition: border-color 200ms ease, transform 200ms ease, background 200ms ease, box-shadow 200ms ease;
+}
+
+.tile::before {
+  background: var(--accent);
+  content: "";
+  height: 1px;
+  left: 18px;
+  right: 18px;
+  opacity: 0;
+  position: absolute;
+  top: 0;
+  transition: opacity 200ms ease;
+}
+
+.tile:hover {
+  background: var(--panel-2);
+  border-color: color-mix(in srgb, var(--accent) 32%, transparent);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  transform: translateY(-2px);
+}
+
+.tile:hover::before { opacity: 1; }
+
+.acceso {
+  border-color: color-mix(in srgb, var(--accent) 42%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.testa {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.etichetta {
+  color: var(--paper-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.badge {
+  align-items: center;
+  background: var(--accent);
+  border-radius: 999px;
+  color: var(--on-accent, #0b1722);
+  display: inline-flex;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  height: 20px;
+  justify-content: center;
+  min-width: 20px;
+  padding: 0 7px;
+}
+
+.valore {
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-size: clamp(22px, 2.2vw, 30px);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.05;
+  margin-top: auto;
+}
+
+.nota {
+  color: var(--paper-muted);
+  font-size: 11px;
+  line-height: 1.5;
+  opacity: 0.92;
+}
+
+.freccia {
+  align-items: center;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 50%;
+  color: var(--accent-strong);
+  display: inline-flex;
+  font-size: 12px;
+  height: 26px;
+  justify-content: center;
+  opacity: 0;
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  transform: translateX(-4px) scale(0.9);
+  transition: opacity 200ms ease, transform 200ms ease;
+  width: 26px;
+}
+
+.tile:hover .freccia, .tile:focus-visible .freccia {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
