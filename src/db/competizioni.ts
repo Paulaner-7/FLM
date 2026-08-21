@@ -30,6 +30,7 @@ import { aggiornaRating, ELO_INIZIALE } from '../engine/rating';
 import { calcolaClassifica, type RigaClassifica } from '../engine/classifica';
 import { finestraDiSettimana } from '../engine/mercato';
 import { accessiStagioneSuccessiva, resetStagionaleGiocatore, prossimaStagione } from '../engine/competizioni/fineStagione';
+import { assertLLMDisponibile } from '../llm/connectivity';
 import { eseguiRitiri, applicaCrescitaStagionale, generaIntake } from './vivaio';
 import type {
   Competizione,
@@ -541,11 +542,13 @@ async function avanzaLeaguePhase(contesto: ContestoSimulazione, competizione: Co
  * Avanza la settimana: simula TUTTE le partite CPU della settimana in tutte le
  * competizioni, aggiorna tabelloni/league phase, poi salta fino alla prossima
  * settimana con una partita dell'utente. Rende l'unità di tempo atomica.
+ * PRD 8.2 (online-first): richiede LLM; offline = throw prima di qualsiasi scrittura.
  */
 export async function avanzaSettimana(carrieraId: Id): Promise<{ settimana: number }> {
+  await assertLLMDisponibile();
   return db.transaction(
     'rw',
-    [db.partite, db.squadre, db.giocatori, db.prestazioni, db.competizioni, db.statoClub, db.carriere],
+    [db.partite, db.squadre, db.giocatori, db.prestazioni, db.competizioni, db.statoClub, db.carriere, db.squadAssignments],
     async () => {
       const carriera = await db.carriere.get(carrieraId);
       const stato = await db.statoClub.get(carrieraId);

@@ -11,7 +11,7 @@
 // 3. deadline day (giorno 30): must-respond + offerta lampo
 // 4. nuove offerte in entrata (3-5 estate, 1-3 gennaio, max 1/giorno)
 // 5. mercato CPU-to-CPU (8-12 movimenti/giorno estate, ~40% gennaio)
-// 6. notizie del giorno (LLM o fallback engine)
+// 6. notizie del giorno (PRD 8.2: LLM obbligatorio, nessun fallback)
 
 import { db, newId } from './database';
 import { eseguiTrasferimento } from './transfers';
@@ -66,6 +66,7 @@ import {
   clamp,
 } from '../engine/rules';
 import { generaCronacaMercato, generaOffertaInEntrata, generaScenariMercatoCpu } from '../llm';
+import { assertLLMDisponibile } from '../llm/connectivity';
 import type {
   Evento,
   Giocatore,
@@ -512,7 +513,7 @@ export async function rispondiTrattativa(
                 },
               ],
               effettiApplicati: false,
-              origine: 'fallback',
+              origine: 'engine',
             };
             await db.eventi.add(evento);
             eventoReazioneId = evento.id;
@@ -592,6 +593,7 @@ export interface EsitoGiornoMercato {
 }
 
 export async function avanzaGiornoMercato(carrieraId: Id): Promise<EsitoGiornoMercato> {
+  await assertLLMDisponibile();
   // ---------- Fase 1: transazione — giorno, risposte CPU, scadenze, deadline, offerte, CPU-to-CPU ----------
   const dati = await db.transaction(
     'rw',
@@ -1230,23 +1232,20 @@ export async function avanzaGiornoMercato(carrieraId: Id): Promise<EsitoGiornoMe
       }
     }
 
-    // Cronaca del giorno: fallback engine ora, LLM se disponibile (PRD 4.6)
+    // Cronaca del giorno: PRD 8.2 online-first — LLM obbligatorio, nessun fallback
     const movimenti = (dati as { movimentiInteressanti: Array<{ giocatore: string; da: string; a: string; cifra: number }> }).movimentiInteressanti;
     if (movimenti.length > 0) {
-      const fallbackTesti = movimenti.map((m) => testoNotiziaMercato(m.giocatore, m.da, m.a, m.cifra));
-      let testi: string[] = fallbackTesti;
-      let origine: 'engine' | 'llm' = 'engine';
-      if (dati.finestra) {
-        const cronaca = await generaCronacaMercato({
-          finestra: nomeFinestra(dati.finestra),
-          giorno: dati.giorno,
-          movimenti: movimenti.slice(0, 8),
-        });
-        if (cronaca && cronaca.length > 0) {
-          testi = cronaca;
-          origine = 'llm';
-        }
+      if (!dati.finestra) throw new Error('LLM non disponibile: finestra mercato mancante');
+      const cronaca = await generaCronacaMercato({
+        finestra: nomeFinestra(dati.finestra),
+        giorno: dati.giorno,
+        movimenti: movimenti.slice(0, 8),
+      });
+      if (!cronaca || cronaca.length === 0) {
+        throw new Error('LLM non disponibile: cronaca mercato non generata. Riprova quando torna la connessione.');
       }
+      const testi: string[] = cronaca;
+      const origine = 'llm' as const;
       for (const testo of testi.slice(0, 4)) {
         const n: Notizia = {
           id: newId(),
@@ -1259,6 +1258,8 @@ export async function avanzaGiornoMercato(carrieraId: Id): Promise<EsitoGiornoMe
         await db.notizie.add(n);
         notizie.push(n);
       }
+    } else if ((dati as { movimentiInteressanti: Array<unknown> }).movimentiInteressanti.length === 0) {
+      // Nessun movimento interessante: nessuna cronaca richiesta (non è errore)
     }
 
     // Polish LLM dei testi delle nuove offerte in entrata (sostituisce il fallback)

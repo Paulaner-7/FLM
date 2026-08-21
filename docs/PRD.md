@@ -493,7 +493,80 @@ Con questi sette punti integrati, il progetto assume la sua forma definitiva: **
 
 ---
 
+---
+
+## 8. v3: da tracker a FM ottimizzato — dottrina vigente
+
+> **Prevalenza normativa.** Questa sezione è vincolante e costituisce la dottrina vigente del progetto. Dove diverge dalle sezioni precedenti — in particolare 2.4, 3.1–3.4, 4.6, 5.1, 7.x e relative roadmap — **prevale quanto scritto qui**.
+
+### 8.1 Ritiro della dottrina MVP
+
+Le regole introduttive della fase MVP hanno esaurito la loro funzione e sono **ritirate**:
+
+- "schema dati su una mano" (sez. 3.4)
+- "6 moduli" del nucleo (sez. 3.2)
+- "regola della decisione settimanale" (sez. 3.1)
+- "profondità a strati" (sez. 3.1 / 3.2)
+- i veto "Evita" della tabella 2.4 (tattica in campo, staff numerico, finanze complesse, ecc.)
+
+Non sono più criteri di ammissibilità per nuove feature. Il progetto non è più un tracker minimale: è un **FM ottimizzato** con FL26 come motore di campo.
+
+**Criterio sostitutivo — vale per ogni modulo futuro, senza eccezioni:**
+
+> Ogni nuovo modulo deve avere (1) **numeri deterministici in `src/engine`** con funzioni pure e regole verificabili, (2) una **superficie testuale LLM definita in `src/llm`** (prompt, schema, validazione), (3) un **verify script dedicato in `scripts/`** (tsx + fake-indexeddb, stile degli `scripts/verify-*.ts` esistenti) che ne dimostri il comportamento. Se uno dei tre manca, il modulo non è accettato.
+
+### 8.2 Online-first assoluto — abrogazione della sezione 4.6
+
+La **sezione 4.6** (modalità offline e fallback con tabelle precaricate) è **ABROGATA**.
+
+FLM è **online-first**: la narrativa LLM è parte fondante del gioco, non un potenziamento opzionale.
+
+- Se il provider LLM non è raggiungibile (rete assente, chiave non configurata, quota esaurita, errore API), l'app mostra un **avviso rosso persistente** e **blocca ogni avanzamento** che richieda generazione: avanzamento settimana, mercato, eventi, generazioni (prospetti, scenari, cronache).
+- Lo sblocco avviene solo con **retry** esplicito andato a buon fine, quando la connessione torna.
+- La **consultazione dei dati resta sempre libera** (rosa, calendario, classifica, statistiche, storico): il blocco riguarda solo le mutazioni di stato che richiedono l'LLM.
+- È vietato reintrodurre contenuti di fallback precaricati per mascherare l'assenza del provider. Nessun evento, notizia o generazione può essere servita da tabelle locali al posto dell'LLM.
+
+*Motivazione:* senza narrativa generata, la carriera non è giocabile come FM ottimizzato; il fallback offline tradirebbe l'identità del prodotto.
+
+### 8.3 Perimetro del mondo
+
+- Il mondo simulato a **livello giocatore** è costituito dalle **23 leghe di `src/data/leagues.ts`**: **19 europee** + **Brasileirão**, **Liga Profesional** (Argentina), **J1 League**, **Saudi Pro League**.
+- Tutte le squadre e i giocatori di queste 23 leghe sono entità complete (anagrafica, attributi, contratti, statistiche) e partecipano alla simulazione.
+- Tutto il resto del database FL26 esiste solo come **squadre ombra** (nome, nazione, forza, coefficiente) per popolare sorteggi, coefficienti e tabelloni, senza simulazione a livello giocatore.
+
+### 8.4 Visibilità totale
+
+Ogni squadra e ogni giocatore presenti nel database sono **ispezionabili** dall'utente: rosa, attributi, statistiche stagionali, storico trasferimenti. È un **requisito**, non un'opzione, e vale per tutte le 23 leghe e per le squadre ombra (ove i dati esistano). Nessuna entità è opaca al giocatore.
+
+### 8.5 Moduli di profondità v3 — roadmap vincolante
+
+I seguenti moduli sono parte del perimetro v3 e vanno implementati secondo il criterio di 8.1:
+
+- **Pagina giocatore universale** (anagrafica, attributi, statistiche, storico trasferimenti, contratto)
+- **Pagina squadra universale** (rosa, modulo, calendario, statistiche di squadra)
+- **Ricerca globale giocatori** con filtri (ruolo, età, overall, valore, scadenza contratto, nazionalità, lega)
+- **Statistiche complete per tutte le leghe** (marcatori, assist, medie voto, clean sheet, ecc. a livello giocatore)
+- **Contratti con scadenze e ingaggi** reali per ogni giocatore
+- **Clausole**: rescissione, % rivendita, riscatti (prestito con diritto/obbligo)
+- **Scontentezza → richiesta di cessione** (flusso morale → richiesta formale)
+- **Trattativa multi-giro** con LLM come **direttore sportivo CPU** (proposta → controproposta → accordo/rifiuto, con validazione engine ad ogni giro)
+- **Eventi deadline day** (trattative lampo a tempo nelle ultime ore di finestra)
+
+L'ordine di implementazione è quello dei milestone v3 aggiornati (vedi 8.7 ove applicabile); ogni modulo include verify script dedicato.
+
+### 8.6 Performance
+
+Requisiti trasversali, vincolanti per ogni milestone v3:
+
+- **Avanzamento settimana** e **rollover stagione** eseguiti in **Web Worker** (nessun freeze del thread UI).
+- **Liste lunghe** (ricerca giocatori, rose complete, statistiche globali) **paginate o virtualizzate** (es. virtual scroll): vietato renderizzare migliaia di righe in DOM.
+- Ogni query su Dexie deve avvenire **su indice** (where/indexed query); vietate full-scan non indicizzate su tabelle grandi (giocatori, partite, prestazioni).
+
+---
+
 *Aggiornamento v2 di agosto 2026. L'endpoint Opencode Go, il catalogo modelli e le capacità dell'editor ejogc327 sono verificati alle fonti indicate; prima della milestone M3 ripeti il test dell'endpoint con la tua chiave, perché cataloghi e termini dei servizi API cambiano rapidamente.*
+
+*Aggiornamento v3 — dottrina vigente. Questa sezione prevale sulle precedenti; la sezione 4.6 è abrogata; FLM è online-first.*
 
  [(opencode.ai)](https://opencode.ai/docs/go/) : https://opencode.ai/docs/go/
  [(Julien.cloud)](https://julien.cloud/opencode-go-models/) : https://julien.cloud/opencode-go-models/

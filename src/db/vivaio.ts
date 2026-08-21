@@ -13,6 +13,7 @@ import { db, newId } from './database';
 import { parseBootstrapCsv, attributiDaRiga, type CsvParseResult } from './bootstrap';
 import { DOCS_CSV } from './autoimport';
 import { generaNarrativaProspetto, generaNomiIntake } from '../llm';
+import { assertLLMDisponibile } from '../llm/connectivity';
 import { prng } from '../engine/random';
 import {
   applicaDeltaOverall,
@@ -191,6 +192,7 @@ export type EsitoIntake =
   | { esito: 'gia_fatto' };
 
 export async function generaIntake(carrieraId: Id, stagioneRiferimento?: string): Promise<EsitoIntake> {
+  await assertLLMDisponibile();
   // ---------- Fase A: profili + nomi LLM (fuori transazione: rete) ----------
   const carriera = await db.carriere.get(carrieraId);
   const stato = await db.statoClub.get(carrieraId);

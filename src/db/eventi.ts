@@ -1,8 +1,9 @@
-// FLM — Persistenza motore eventi (PRD 4.2/4.3/4.6).
+// FLM — Persistenza motore eventi (PRD 4.2/4.3, 8.2 online-first).
 // Regola 1 AGENTS.md: ogni dato persistente passa da qui (Dexie).
 // Regola 2 AGENTS.md: l'LLM si chiama SOLO tramite src/llm (generaEventiSettimanali).
 // Regola 3 AGENTS.md: tutte le meccaniche (pesca, cooldown, validazione, effetti)
 // vengono da src/engine/eventi.ts — qui solo orchestrazione e transazioni.
+// PRD 8.2: online-first — nessun fallback offline; LLM irraggiungibile = errore visibile + retry.
 //
 // generaContenutiTurno: DOPO la conferma del referto (fuori dalla sua
 // transazione, la chiamata LLM non deve mai tenere un lock sul DB). La scrittura
@@ -18,27 +19,22 @@ import {
   conseguenzeInfortuni,
   faseStagione,
   normalizzaNome,
-  notizieOfflineDaTurno,
   pescaCategorie,
   pescaCountEventi,
   poolCategorie,
-  selezionaPerHint,
   settimaneConsecutiveConDueEventi,
   validaPropostaEventi,
 } from '../engine/eventi';
-import { fallbackDisponibili, type FallbackEventoTemplate } from '../engine/fallback-events';
+import { assertLLMDisponibile } from '../llm/connectivity';
 import { giocatoriInCrisi, moraleSpogliatoio } from '../engine/morale';
 import {
-  FALLBACK_NO_RIPETI_SETTIMANE,
   FINESTRA_ANTI_RIPETIZIONE,
-  MAX_SETTIMANE_INFORTUNIO_EVENTO,
   STRISCIA_NEGATIVA_CATEGORIA_RARA,
-  clamp,
 } from '../engine/rules';
 import { generaEventiSettimanali } from '../llm';
 import type { PropostaEventi } from '../llm';
 import { tutteLeSituazioni } from '../data/casi-reali';
-import type { CategoriaEvento, Evento, Giocatore, Id, Notizia, Partita, Squadra } from '../types/entities';
+import type { Evento, Giocatore, Id, Notizia, Partita, Squadra } from '../types/entities';
 
 export interface EsitoGenerazioneContenuti {
   eventi: Evento[];
@@ -76,11 +72,11 @@ function ultimePartite(
 
 /**
  * Genera gli eventi narrativi e le notizie del turno appena giocato.
- * LLM attivo → proposta validata (engine); fallisce o tutto scartato → tabelle
- * offline (PRD 4.6). Notizie offline sempre dai risultati reali se l'LLM non
- * le produce. Salvataggio atomico con guardia anti-race su partita.giocata.
+ * PRD 8.2 (online-first): richiede LLM; offline = throw prima di qualsiasi scrittura.
+ * Salvataggio atomico con guardia anti-race su partita.giocata.
  */
 export async function generaContenutiTurno(input: { carrieraId: Id; partitaId: Id }): Promise<EsitoGenerazioneContenuti> {
+  await assertLLMDisponibile();
   // ---------- Lettura stato (fuori transazione: serve per la chiamata LLM) ----------
   const [carriera, stato, partita] = await Promise.all([
     db.carriere.get(input.carrieraId),
@@ -156,7 +152,7 @@ export async function generaContenutiTurno(input: { carrieraId: Id; partitaId: I
     .filter((g) => g.promesse.some((p) => p.stato === 'attiva' && p.scadenza <= settimanaCorrente + 2))
     .map((g) => g.nome);
 
-  // ---------- Tentativo LLM (regola 2: solo tramite src/llm) ----------
+  // ---------- Tentativo LLM (regola 2: solo tramite src/llm, 8.2 online-first) ----------
   const contesto = {
     settimana: settimanaCorrente,
     posizioneClassifica: rigaMia?.posizione ?? 0,
@@ -172,52 +168,29 @@ export async function generaContenutiTurno(input: { carrieraId: Id; partitaId: I
     faseStagione: faseStagione(settimanaTurno, giornateTotali),
   };
   const proposta = await generaEventiSettimanali(contesto);
+  if (!proposta) {
+    throw new Error('LLM non disponibile: impossibile generare eventi/notizie. Riprova quando torna la connessione.');
+  }
 
   // ---------- Validazione (engine) ----------
-  let validi: PropostaEventi = { eventi: [], notizie: [] };
-  if (proposta) {
-    validi = validaPropostaEventi(proposta, {
-      categorieRichieste: categorie,
-      rosa: rosa.map((g) => g.nome),
-      ultimiEventi,
-    });
-  }
+  const validi: PropostaEventi = validaPropostaEventi(proposta, {
+    categorieRichieste: categorie,
+    rosa: rosa.map((g) => g.nome),
+    ultimiEventi,
+  });
 
-  // ---------- Fallback offline (PRD 4.6): SOLO se LLM fallito o tutto scartato.
-  // Se l'LLM ha risposto ma ha omesso una categoria (verifica di realismo:
-  // "meglio meno eventi che eventi inverosimili"), l'omissione è rispettata. ----------
-  const templateUsatiDiRecent = new Set(
-    eventiArchivio
-      .filter((e) => e.templateId && e.settimana > settimanaTurno - FALLBACK_NO_RIPETI_SETTIMANE)
-      .map((e) => e.templateId as string),
-  );
+  // PRD 8.2: nessun fallback — se la validazione scarta tutto, si salva ciò che resta (anche zero eventi),
+  // ma mai contenuto precaricato. Notizie richieste da LLM: se vuote, errore bloccante.
+  if (validi.notizie.length === 0) {
+    throw new Error('LLM non disponibile: notizie non generate. Riprova quando torna la connessione.');
+  }
 
   const eventiDaSalvare: Array<Omit<Evento, 'id' | 'carrieraId' | 'settimana' | 'sceltaFatta' | 'effettiApplicati'>> = [];
-  if (proposta === null || validi.eventi.length === 0) {
-    for (const categoria of categorie) {
-      const template = pescaTemplateFallback(categoria, templateUsatiDiRecent, seed);
-      if (!template) continue;
-      eventiDaSalvare.push(concretezzaTemplate(template, rosa, seed));
-    }
-  } else {
-    // Gli eventi LLM validi si salvano con origine 'llm'
-    for (const e of validi.eventi) {
-      eventiDaSalvare.push({ ...e, origine: 'llm' });
-    }
+  for (const e of validi.eventi) {
+    eventiDaSalvare.push({ ...e, origine: 'llm' });
   }
 
-  let notizie: string[];
-  if (validi.notizie.length > 0) {
-    notizie = validi.notizie;
-  } else {
-    const turno = partiteCampionato.filter((p) => p.giornata === partita.giornata);
-    notizie = notizieOfflineDaTurno({
-      miaPartita: partita,
-      turno: turno.length > 0 ? turno : [partita],
-      miaSquadraId: carriera.squadraId,
-      nomeSquadra,
-    });
-  }
+  const notizie: string[] = validi.notizie;
 
   // ---------- Salvataggio atomico con guardia anti-race ----------
   return db.transaction('rw', [db.eventi, db.notizie, db.partite, db.giocatori], async () => {
@@ -267,7 +240,7 @@ export async function generaContenutiTurno(input: { carrieraId: Id; partitaId: I
         carrieraId: input.carrieraId,
         settimana: settimanaTurno,
         testo,
-        origine: validi.notizie.length > 0 ? 'llm' : 'engine',
+        origine: 'llm',
       };
       await db.notizie.add(notizia);
       notizieSalvate.push(notizia);
@@ -277,65 +250,6 @@ export async function generaContenutiTurno(input: { carrieraId: Id; partitaId: I
     // generati restano nell'archivio senza tracciamento sulla partita.
     return { eventi: salvati, notizie: notizieSalvate, scartata: false };
   });
-}
-
-/** Pesca un template di fallback per categoria: no-repeat recente, seme stabile. */
-function pescaTemplateFallback(
-  categoria: CategoriaEvento,
-  usatiDiRecent: Set<string>,
-  seed: string,
-): FallbackEventoTemplate | null {
-  const disponibili = fallbackDisponibili(categoria, usatiDiRecent);
-  const pool = disponibili.length > 0 ? disponibili : fallbackDisponibili(categoria, new Set());
-  if (pool.length === 0) return null;
-  // hash dell'id: scelta stabile e distribuita anche con pool che cambia
-  const indice = Math.abs(hashId(seed + categoria) % pool.length);
-  return pool[indice] ?? null;
-}
-
-/** Hash stabile piccolo (FNV-1a è in engine/random, qui evito dipendenze extra). */
-function hashId(valore: string): number {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < valore.length; i++) {
-    h ^= valore.charCodeAt(i);
-    h = Math.imul(h, 0x01000193);
-  }
-  return h >>> 0;
-}
-
-/** Concretizza un template: sostituisce {giocatore} col candidato per hint. */
-function concretezzaTemplate(
-  template: FallbackEventoTemplate,
-  rosa: Giocatore[],
-  seed: string,
-): Omit<Evento, 'id' | 'carrieraId' | 'settimana' | 'sceltaFatta' | 'effettiApplicati'> {
-  const giocatore = template.hint ? selezionaPerHint(rosa, template.hint, seed) : null;
-  const nome = giocatore?.nome ?? null;
-  const sostituisci = (testo: string): string => (nome ? testo.replaceAll('{giocatore}', nome) : testo.replaceAll('{giocatore}', 'un giocatore'));
-  return {
-    categoria: template.categoria,
-    tipo: template.tipo,
-    titolo: sostituisci(template.titolo),
-    testo: sostituisci(template.testo),
-    giocatoriCoinvolti: nome ? [nome] : [],
-    // Infortunio narrativo: applicato davvero alla rosa alla creazione
-    effettiFisici:
-      nome && template.infortunioSettimane !== undefined
-        ? [{ giocatore: nome, settimane: clamp(template.infortunioSettimane, 1, MAX_SETTIMANE_INFORTUNIO_EVENTO) }]
-        : undefined,
-    opzioni: template.opzioni.map((o) => ({
-      testo: sostituisci(o.testo),
-      effettiProposti: {
-        moraleGiocatori: clamp(o.effettiProposti.moraleGiocatori, -10, 10),
-        fiduciaGiocatori: clamp(o.effettiProposti.fiduciaGiocatori, -10, 10),
-        fiduciaSocieta: clamp(o.effettiProposti.fiduciaSocieta, -10, 10),
-        fiduciaTifosi: clamp(o.effettiProposti.fiduciaTifosi, -10, 10),
-        reputazione: clamp(o.effettiProposti.reputazione, -10, 10),
-      },
-    })),
-    origine: 'fallback',
-    templateId: template.id,
-  };
 }
 
 /**

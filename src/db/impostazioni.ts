@@ -1,6 +1,6 @@
-// FLM — Impostazioni globali (config LLM, PRD 4.5 e 7.8)
+// FLM — Impostazioni globali (config LLM, PRD 4.5 e 7.8, 8.2 online-first)
 // Regola 1 AGENTS.md: persistenza solo via Dexie. Record unico id 'llm'.
-// Record assente = LLM disattivo: il motore usa il fallback offline (PRD 4.6).
+// Record assente = LLM disattivo: il gioco è in pausa, avanza solo con retry (PRD 8.2).
 
 import { db } from './database';
 import type { ImpostazioniRecord } from '../types/entities';

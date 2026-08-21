@@ -4,8 +4,8 @@
 // Se notizia dice "X batte Y 3-0", la Partita esiste davvero con quel risultato.
 
 import { db, newId } from './database';
-import { generaMondoFallback } from '../engine/mondo';
 import { generaMondoNotizie } from '../llm';
+import { assertLLMDisponibile } from '../llm/connectivity';
 import { hashString, prng } from '../engine/random';
 import type { MondoNotizia, Partita, Squadra, Giocatore } from '../types/entities';
 
@@ -522,6 +522,7 @@ async function generaMondoGrounded(
 // Public API: generaMondoContenutiTurno GROUNDED (con LLM narratore sopra i fatti)
 // ---------------------------------------------------------------------------
 export async function generaMondoContenutiTurno(input: { carrieraId: string; settimana: number }): Promise<MondoNotizia[]> {
+  await assertLLMDisponibile();
   try {
     const [carriera, stato, squadre, partite, competizioni, giocatori, assegnazioni, prestazioni, ledger] = await Promise.all([
       db.carriere.get(input.carrieraId),
@@ -580,17 +581,9 @@ export async function generaMondoContenutiTurno(input: { carrieraId: string; set
     // 1) Genera i fatti grounded (e applica subito eventuali infortuni al DB)
     let grounded = await generaMondoGrounded(ctx, seedBase);
 
-    // Se nessun fatto reale (es. pausa senza partite) -> fallback inventato vecchio (ultima spiaggia)
+    // PRD 8.2: nessun fallback inventato; se nessun fatto reale, propaga errore (blocco)
     if (grounded.length === 0) {
-      const fallback = generaMondoFallback({
-        settimana: input.settimana,
-        stagione: carriera.stagione,
-        squadraUtenteNome: ctx.squadraUtenteNome,
-        campionatoUtenteNome: competizioni.find((c) => c.tipo === 'campionato' && c.squadre.includes(carriera.squadraId))?.nome ?? carriera.campionato,
-        squadreCampionato: (competizioni.find((c) => c.tipo === 'campionato' && c.squadre.includes(carriera.squadraId))?.squadre.map((id) => squadreMap.get(id)?.nome ?? '') ?? []).filter(Boolean) as string[],
-        seed: seedBase,
-      });
-      grounded = fallback;
+      throw new Error('LLM non disponibile: nessun fatto reale per generare mondo notizie. Riprova quando torna la connessione.');
     }
 
     // 2) Tenta LLM narratore GROUNDED: passa i fatti reali e chiedi di riscriverli in stile X
@@ -647,8 +640,11 @@ export async function generaMondoContenutiTurno(input: { carrieraId: string; set
           }
         }
       }
-    } catch {
-      // LLM fail -> resta grounded engine
+    } catch (err) {
+      // PRD 8.2: LLM fail su mondo = propaga errore, mai resto grounded silenzioso se online ma LLM errato?
+      // Se l'errore è offline, lascialo risalire; se è solo validazione, resta grounded (grounded è reale, non precaricato)
+      if (err instanceof Error && err.message.includes('LLM non disponibile')) throw err;
+      // Altrimenti (validazione insufficiente) resta grounded engine (fatti reali)
     }
 
     // 3) Salva (con oreFa già coerenti)
@@ -679,44 +675,8 @@ export async function generaMondoContenutiTurno(input: { carrieraId: string; set
     return final.sort((a, b) => a.oreFa - b.oreFa);
   } catch (e) {
     console.error('generaMondoContenutiTurno fail', e);
-    // ultimo fallback in-memory
-    try {
-      const carriera = await db.carriere.get(input.carrieraId);
-      if (!carriera) return [];
-      const squadre = await db.squadre.toArray();
-      const competizioni = await db.competizioni.toArray();
-      const squadreMap = new Map(squadre.filter((s) => s.carrieraId === input.carrieraId).map((s) => [s.id, s]));
-      const seed = `${input.carrieraId}|${input.settimana}|fallback`;
-      const fallback = generaMondoFallback({
-        settimana: input.settimana,
-        stagione: carriera.stagione,
-        squadraUtenteNome: squadreMap.get(carriera.squadraId)?.nome ?? carriera.nome,
-        campionatoUtenteNome: competizioni.find((c) => c.tipo === 'campionato' && c.squadre.includes(carriera.squadraId))?.nome ?? carriera.campionato,
-        squadreCampionato: (competizioni.find((c) => c.tipo === 'campionato' && c.squadre.includes(carriera.squadraId))?.squadre.map((id) => squadreMap.get(id)?.nome ?? '') ?? []).filter(Boolean) as string[],
-        seed,
-      });
-      const randSeed = prng(hashString(`${seed}|eng`));
-      return fallback.slice(0, 4).map((d, i) => ({
-        id: newId(),
-        carrieraId: input.carrieraId,
-        settimana: input.settimana,
-        categoria: d.categoria,
-        titolo: d.titolo,
-        estratto: d.estratto,
-        corpo: d.corpo,
-        autoreNome: d.autoreNome,
-        autoreHandle: d.autoreHandle,
-        oreFa: 2 + i * 3 + Math.floor(randSeed() * 2),
-        likes: d.likes,
-        reposts: d.reposts,
-        commenti: d.commenti,
-        squadra: d.squadra,
-        giocatore: d.giocatore,
-        origine: 'engine' as const,
-      }));
-    } catch {
-      return [];
-    }
+    if (e instanceof Error && e.message.includes('LLM non disponibile')) throw e;
+    throw e;
   }
 }
 

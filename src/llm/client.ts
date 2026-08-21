@@ -3,10 +3,9 @@
 // impostazioni (src/db/impostazioni.ts). Nessun adattatore per provider:
 // endpoint standard /chat/completions con auth Bearer.
 //
-// Gestione errori (regola ferrea): rete, timeout o HTTP → MAI eccezioni verso
-// il chiamante, l'LLM è un potenziamento non una dipendenza (PRD 4.6).
-// Il client restituisce un esito tipizzato; le funzioni pubbliche di
-// src/llm/index.ts lo traducono in null per i flussi di gioco.
+// Gestione errori (regola ferrea): rete, timeout o HTTP → MAI eccezioni dal client.
+// Il client restituisce un esito tipizzato; PRD 8.2 (online-first): le funzioni di gioco
+// che richiedono LLM lanciano errore bloccante via assertLLMDisponibile(), mai fallback silenzioso.
 
 import { impostazioniLlm, normalizzaBaseUrl } from '../db/impostazioni';
 import type { ImpostazioniRecord } from '../types/entities';

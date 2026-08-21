@@ -631,9 +631,9 @@ export interface Evento {
   /** Indice dell'opzione scelta dall'allenatore (vuoto finché non deciso) */
   sceltaFatta?: number;
   effettiApplicati: boolean;
-  /** Fonte del contenuto: LLM o fallback offline (PRD 4.6) — serve all'anti-ripetizione */
-  origine?: 'llm' | 'fallback';
-  /** Id del template di fallback usato (anti-ripetizione 5 settimane, PRD 4.6) */
+  /** Fonte del contenuto: LLM o engine (PRD 8.2, online-first) — serve all'anti-ripetizione */
+  origine?: 'llm' | 'fallback' | 'engine';
+  /** Id del template usato (legacy, PRD 4.6) — mantenuto per compatibilità dati storici */
   templateId?: string;
   /** Letto/non letto in pagina Mail (decisione utente M4: inbox come casella email) */
   letta?: boolean;

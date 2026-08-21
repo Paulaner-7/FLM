@@ -1,12 +1,12 @@
-// FLM — Motore eventi (PRD 4.1/4.2/4.3/4.6): regole PURE del direttore narrativo.
+// FLM — Motore eventi (PRD 4.1/4.2/4.3): regole PURE del direttore narrativo.
 // Regola 3 AGENTS.md: qui si calcola TUTTO ciò che è meccanica (pesca categorie,
-// cooldown, validazione semantica, clamp, applicazione effetti, notizie offline).
+// cooldown, validazione semantica, clamp, applicazione effetti).
 // L'LLM produce solo testo e proposte (src/llm); la persistenza vive in db/eventi.ts.
-// Nessuna scrittura qui, nessun Math.random: pesca seminata (PRNG di random.ts).
+// PRD 8.2 (online-first): nessun fallback offline; validazione ritorna proposta filtrata,
+// mai contenuto precaricato. Nessuna scrittura qui, nessun Math.random: pesca seminata (PRNG di random.ts).
 
-import type { CategoriaEvento, Evento, Giocatore, Id, Partita, StatoClub } from '../types/entities';
+import type { CategoriaEvento, Evento, Giocatore, Id, StatoClub } from '../types/entities';
 import type { PropostaEventi } from '../llm';
-import type { HintSelezioneGiocatore } from '../data/casi-reali';
 import {
   COOLDOWN_CATEGORIA_TURNI,
   MAX_CONSECUTIVI_DUE_EVENTI,
@@ -177,8 +177,7 @@ export interface CandidatoGiocatore {
 /**
  * Pool di candidati della rosa con l'etichetta del perché sono coerenti con un
  * evento: crisi di morale, panchinaro (overall alto, pochi minuti), in
- * recupero, gioiello del vivaio, leader, top player. L'LLM cita SOLO questi
- * nomi; il fallback usa lo stesso pool per gli hint di sostituzione.
+ * recupero, gioiello del vivaio, leader, top player. L'LLM cita SOLO questi nomi.
  */
 export function candidatiPerCategoria(giocatori: Giocatore[]): CandidatoGiocatore[] {
   const giaVisti = new Set<Id>();
@@ -312,7 +311,7 @@ export interface ContestoValidazione {
  * - opzioni 2-4 (sotto si scarta, sopra si tronca)
  * - scarta eventi troppo simili all'archivio (Jaccard ≥ soglia)
  * - notizie: solo stringhe non vuote, max MAX_NOTIZIE
- * Ritorna la proposta filtrata (può avere 0 eventi: il chiamante decide il fallback).
+ * Ritorna la proposta filtrata (può avere 0 eventi: il chiamante gestisce il vuoto, mai fallback).
  */
 export function validaPropostaEventi(proposta: PropostaEventi, contesto: ContestoValidazione): PropostaEventi {
   const richieste = new Set(contesto.categorieRichieste);
@@ -368,53 +367,6 @@ export function validaPropostaEventi(proposta: PropostaEventi, contesto: Contest
     eventi: eventiValidi.slice(0, MAX_EVENTI_TURNO),
     notizie: proposta.notizie.filter((n) => n.trim().length > 0).slice(0, MAX_NOTIZIE),
   };
-}
-
-// ---------------------------------------------------------------------------
-// Selezione giocatore per hint (fallback offline, PRD 4.6)
-// ---------------------------------------------------------------------------
-
-/**
- * Sceglie il giocatore più coerente con l'hint del template di fallback
- * (o casuale per le situazioni personali). Deterministico: seme = seed|hint.
- */
-export function selezionaPerHint(giocatori: Giocatore[], hint: HintSelezioneGiocatore, seed: string): Giocatore | null {
-  if (giocatori.length === 0) return null;
-  const rand = prng(hashString(`${seed}|hint|${hint}`));
-  const casuale = (): Giocatore => {
-    const g = giocatori[Math.floor(rand() * giocatori.length)];
-    return g ?? giocatori[0]!;
-  };
-
-  switch (hint) {
-    case 'crisi_morale':
-      return (
-        [...giocatori].sort((a, b) => a.morale - b.morale)[0] ??
-        casuale()
-      );
-    case 'panchinaro': {
-      const candidati = giocatori.filter(
-        (g) => g.overall >= OVERALL_PANCHINARO && g.minutiStagione < MINUTI_PANCHINARO,
-      );
-      return candidati.sort((a, b) => b.overall - a.overall)[0] ?? casuale();
-    }
-    case 'infortunato': {
-      const infortunati = giocatori.filter((g) => g.infortunioFinoA !== undefined && g.infortunioFinoA > 0);
-      return infortunati.sort((a, b) => (b.infortunioFinoA ?? 0) - (a.infortunioFinoA ?? 0))[0] ?? casuale();
-    }
-    case 'giovane': {
-      const giovani = giocatori.filter((g) => g.giovane);
-      return giovani.sort((a, b) => b.overall - a.overall)[0] ?? casuale();
-    }
-    case 'leader': {
-      const leader = giocatori.filter((g) => g.leader);
-      return leader.sort((a, b) => b.overall - a.overall)[0] ?? casuale();
-    }
-    case 'rottura':
-      return [...giocatori].sort((a, b) => b.overall - a.overall)[0] ?? casuale();
-    case 'casuale':
-      return casuale();
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -497,62 +449,4 @@ export function applicaEffettiEvento(
   };
 }
 
-// ---------------------------------------------------------------------------
-// Notizie offline (PRD 4.6): cronaca deterministica dai risultati REALI del turno
-// ---------------------------------------------------------------------------
-
-export interface InputNotizieOffline {
-  /** La tua partita del turno */
-  miaPartita: Partita;
-  /** Tutte le partite del turno (per l'evidenza CPU) */
-  turno: Partita[];
-  miaSquadraId: Id;
-  /** Nome squadra da id */
-  nomeSquadra: (id: Id) => string;
-}
-
-/** "Il giornale del giorno dopo" senza LLM: la tua partita + l'evidenza del turno. */
-export function notizieOfflineDaTurno(input: InputNotizieOffline): string[] {
-  const { miaPartita, turno, miaSquadraId, nomeSquadra } = input;
-  const notizie: string[] = [];
-
-  const inCasa = miaPartita.casa === miaSquadraId;
-  const avversario = nomeSquadra(inCasa ? miaPartita.trasferta : miaPartita.casa);
-  const golMiei = inCasa ? miaPartita.golCasa : miaPartita.golTrasferta;
-  const golLoro = inCasa ? miaPartita.golTrasferta : miaPartita.golCasa;
-  const sede = inCasa ? 'in casa' : 'in trasferta';
-  const marcatori = miaPartita.marcatori?.length
-    ? ` A segno: ${miaPartita.marcatori.slice(0, 2).join(' e ')}${miaPartita.marcatori.length > 2 ? ' e altri' : ''}.`
-    : '';
-
-  if (golMiei > golLoro) {
-    notizie.push(`Il ${nomeSquadra(miaSquadraId)} batte ${golMiei}-${golLoro} ${avversario} ${sede}.${marcatori}`);
-  } else if (golMiei === golLoro) {
-    notizie.push(`Pareggio ${golMiei}-${golLoro} ${sede} contro ${avversario} per il ${nomeSquadra(miaSquadraId)}.`);
-  } else {
-    notizie.push(`Sconfitta amara ${golLoro}-${golMiei} ${sede} contro ${avversario} per il ${nomeSquadra(miaSquadraId)}.`);
-  }
-
-  // Evidenza CPU: la sorpresa più grossa (scarto rating non noto qui → uso la
-  // partita col maggior numero di gol, o quella più vicina se tutto noioso)
-  const cpu = turno.filter((p) => p.id !== miaPartita.id);
-  if (cpu.length > 0) {
-    const piuGol = [...cpu].sort(
-      (a, b) => b.golCasa + b.golTrasferta - (a.golCasa + a.golTrasferta),
-    )[0];
-    if (piuGol) {
-      const scarto = Math.abs(piuGol.golCasa - piuGol.golTrasferta);
-      const testa = nomeSquadra(piuGol.casa);
-      const coda = nomeSquadra(piuGol.trasferta);
-      if (piuGol.golCasa === piuGol.golTrasferta) {
-        notizie.push(`Finisce ${piuGol.golCasa}-${piuGol.golTrasferta} tra ${testa} e ${coda}: niente sorprese, tante recriminazioni.`);
-      } else if (scarto >= 3) {
-        notizie.push(`Tennis anche in campionato: ${testa}-${coda} ${piuGol.golCasa}-${piuGol.golTrasferta}.`);
-      } else {
-        notizie.push(`${testa}-${coda} ${piuGol.golCasa}-${piuGol.golTrasferta}: tre punti pesanti in chiave classifica.`);
-      }
-    }
-  }
-
-  return notizie.slice(0, MAX_NOTIZIE);
-}
+// Notizie offline rimosse (PRD 8.2, online-first): la cronaca richiede LLM; offline = blocco.

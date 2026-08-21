@@ -6,9 +6,14 @@
 // Regola 3 AGENTS.md: l'LLM produce SOLO proposte — qui si valida la forma
 // (schema PRD 4.2); la semantica (giocatori esistenti, clamp degli effetti,
 // anti-ripetizione) è dell'engine. Ogni funzione ritorna null in caso di
-// errore: il chiamante ha sempre un fallback offline (PRD 4.6).
+// errore. PRD 8.2 (online-first): nessun fallback offline; chiamate fallite
+// = errore visibile + retry, mai contenuto generico silenzioso.
+
+export { assertLLMDisponibile, avviaMonitoraggio, fermaMonitoraggio, getStato, isOnline, probe, subscribe } from './connectivity';
+export type { StatoConnettivita } from './connectivity';
 
 import { creaLlmClient, type EsitoChat, type MessaggioChat, type ResponseSchema, type RispostaChatPubblica, type RuoloModello } from './client';
+import { assertLLMDisponibile as _assertLLM } from './connectivity';
 import {
   SCHEMA_EVENTI_JSON,
   SCHEMA_SCREENSHOT_VOTI,
@@ -101,10 +106,10 @@ export async function chatCompletions(opzioni: OpzioniChatCompletions): Promise<
 }
 
 /**
- * Genera gli eventi settimanali e le notizie del turno (PRD 4.2).
+ * Genera gli eventi settimanali e le notizie del turno (PRD 4.2, 8.2 online-first).
  * Tentativo 1: structured output con lo schema del PRD; se il JSON non
- * valida, un retry in prompt-mode con istruzioni esplicite; poi null
- * (il motore pesca dal fallback offline, PRD 4.6).
+ * valida, un retry in prompt-mode con istruzioni esplicite; poi null.
+ * PRD 8.2: il chiamante (db/eventi) tratta il null come errore bloccante (nessun fallback).
  */
 export async function generaEventiSettimanali(contesto: ContestoGenerazione): Promise<PropostaEventi | null> {
   return (await servizio()).generaEventiSettimanali(contesto);
@@ -112,8 +117,7 @@ export async function generaEventiSettimanali(contesto: ContestoGenerazione): Pr
 
 /**
  * Offerta in entrata (PRD 7.3): email del club CPU con motivazione. Le cifre
- * arrivano dall'engine nel contesto: l'LLM scrive solo il testo. null = fallback
- * template engine (PRD 4.6).
+ * arrivano dall'engine nel contesto: l'LLM scrive solo il testo. null = errore (PRD 8.2, nessun fallback).
  */
 export async function generaOffertaInEntrata(contesto: ContestoOffertaInEntrata): Promise<OffertaInEntrata | null> {
   return (await servizio()).generaOffertaInEntrata(contesto);
@@ -152,7 +156,7 @@ export async function generaNarrativaProspetto(contesto: ContestoNarrativaProspe
   return (await servizio()).generaNarrativaProspetto(contesto);
 }
 
-/** Notizie dal mondo (X-style) — fuori dalla tua squadra. null = fallback engine. */
+/** Notizie dal mondo (X-style) — fuori dalla tua squadra. null = errore (PRD 8.2, nessun fallback). */
 export async function generaMondoNotizie(contesto: ContestoMondoNotizie): Promise<PropostaMondo | null> {
   return (await servizio()).generaMondoNotizie(contesto);
 }
@@ -346,6 +350,7 @@ export function creaServizioLlm(fetchImpl: typeof fetch = fetch, getImpostazioni
     },
 
     async generaEventiSettimanali(contesto): Promise<PropostaEventi | null> {
+      await _assertLLM().catch((e) => { throw e; });
       const messaggi = costruisciMessaggiEventi(contesto);
 
       const primo = await client.chat({ ruolo: 'narrativo', messaggi, responseSchema: SCHEMA_EVENTI_JSON, maxTokens: MAX_TOKEN_EVENTI });
@@ -379,6 +384,7 @@ export function creaServizioLlm(fetchImpl: typeof fetch = fetch, getImpostazioni
     },
 
     async analizzaScreenshotReferto(opzioni): Promise<EsitoScreenshotVoti> {
+      await _assertLLM().catch((e) => { throw e; });
       const messaggi = costruisciMessaggiScreenshot(opzioni);
       // Timeout lungo (60s) e token abbondanti (4096): i modelli reasoning
       // (MiMo) consumano token nel ragionamento e devono avere margine per
@@ -529,30 +535,35 @@ export function creaServizioLlm(fetchImpl: typeof fetch = fetch, getImpostazioni
     },
 
     async generaOffertaInEntrata(contesto): Promise<OffertaInEntrata | null> {
+      await _assertLLM().catch((e) => { throw e; });
       const messaggi = costruisciMessaggiOffertaInEntrata(contesto);
       const esito = await chiamaConSchemaRaw(client, messaggi, SCHEMA_OFFERTA_IN_ENTRATA, validaOffertaInEntrataWire);
       return esito === null ? null : daWireOffertaInEntrata(esito);
     },
 
     async generaRispostaTrattativa(contesto): Promise<string | null> {
+      await _assertLLM().catch((e) => { throw e; });
       const messaggi = costruisciMessaggiRispostaTrattativa(contesto);
       const esito = await chiamaConSchemaRaw(client, messaggi, SCHEMA_RISPOSTA_TRATTATIVA, validaRispostaTrattativaWire);
       return esito?.testo ?? null;
     },
 
     async generaScenariMercatoCpu(contesto): Promise<ScenariMercatoCpu | null> {
+      await _assertLLM().catch((e) => { throw e; });
       const messaggi = costruisciMessaggiScenariMercato(contesto);
       const esito = await chiamaConSchemaRaw(client, messaggi, SCHEMA_SCENARI_MERCATO_CPU, validaScenariMercatoCpuWire);
       return esito === null ? null : daWireScenariMercatoCpu(esito);
     },
 
     async generaCronacaMercato(contesto): Promise<string[] | null> {
+      await _assertLLM().catch((e) => { throw e; });
       const messaggi = costruisciMessaggiCronacaMercato(contesto);
       const esito = await chiamaConSchemaRaw(client, messaggi, SCHEMA_CRONACA_MERCATO, validaCronacaMercatoWire);
       return esito?.notizie ?? null;
     },
 
     async generaNomiIntake(richieste, nomiEsistenti): Promise<NomiIntake | null> {
+      await _assertLLM().catch((e) => { throw e; });
       const CHUNK = 150;
       const risultati = new Map<string, string>();
       for (let inizio = 0; inizio < richieste.length; inizio += CHUNK) {
@@ -567,12 +578,14 @@ export function creaServizioLlm(fetchImpl: typeof fetch = fetch, getImpostazioni
     },
 
     async generaNarrativaProspetto(contesto): Promise<ProspettoNarrativa | null> {
+      await _assertLLM().catch((e) => { throw e; });
       const messaggi = costruisciMessaggiNarrativaProspetto(contesto);
       const esito = await chiamaConSchemaRaw(client, messaggi, SCHEMA_PROSPETTO_NARRATIVA, validaProspettoNarrativaWire);
       return esito === null ? null : daWireProspettoNarrativa(esito);
     },
 
     async generaMondoNotizie(contesto): Promise<PropostaMondo | null> {
+      await _assertLLM().catch((e) => { throw e; });
       const messaggi = costruisciMessaggiMondo(contesto);
       const esito = await chiamaConSchemaRaw(client, messaggi, SCHEMA_MONDO_NOTIZIE, validaPropostaMondoWire, 2048);
       return esito === null ? null : daWirePropostaMondo(esito);
@@ -614,6 +627,10 @@ function servizio(override?: ImpostazioniOverride): ServizioLlm {
   if (override) return creaServizioLlm(fetch, () => Promise.resolve(override as ImpostazioniRecord));
   servizioSingleton ??= creaServizioLlm();
   return servizioSingleton;
+}
+
+export function _resetServizioForTest(): void {
+  servizioSingleton = null;
 }
 
 // ---------------------------------------------------------------------------

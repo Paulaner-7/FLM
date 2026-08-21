@@ -126,15 +126,13 @@ async function main(): Promise<void> {
   check('immutabile: doppia conferma rifiutata', doppia);
   const riletta = await db.partite.get(prossima.id);
   check('immutabile: partita invariata dopo tentata riconferma', riletta?.giocata && (riletta!.casa === squadra.id ? riletta!.golCasa : riletta!.golTrasferta) === golMiei);
-  // Rating Elo subito dopo la prima vittoria
+  // Rating Elo subito dopo la prima vittoria (robusto a casa/trasferta)
   const ratingDopo = (await db.squadre.get(squadra.id))?.rating ?? 0;
-  const ratingAtteso = aggiornaRating(
-    esito.partita.golCasa,
-    esito.partita.golTrasferta,
-    ratingUtentePrima,
-    ratingAvversariaPrima,
-  );
-  const ratingUtenteAtteso = esito.partita.casa === squadra.id ? ratingAtteso.ratingCasa : ratingAtteso.ratingTrasferta;
+  const inCasaPrima = prossima.casa === squadra.id;
+  const ratingAtteso = inCasaPrima
+    ? aggiornaRating(esito.partita.golCasa, esito.partita.golTrasferta, ratingUtentePrima, ratingAvversariaPrima)
+    : aggiornaRating(esito.partita.golCasa, esito.partita.golTrasferta, ratingAvversariaPrima, ratingUtentePrima);
+  const ratingUtenteAtteso = inCasaPrima ? ratingAtteso.ratingCasa : ratingAtteso.ratingTrasferta;
   check('rating: squadra utente aggiornata dopo la vittoria', ratingDopo === ratingUtenteAtteso, `${ratingUtentePrima} → ${ratingDopo} (atteso ${ratingUtenteAtteso})`);
 
   // Avanzamento settimana: la prossima partita è in una settimana ≥ quella giocata
@@ -174,9 +172,11 @@ async function main(): Promise<void> {
     contoAutogol = true;
   }
   check('validazione: marcatori + autogol ≠ gol rifiutato', contoAutogol);
-  // conto giusto con autogol: accettato
+  // conto giusto con autogol: accettato (robusto a casa/trasferta)
   const esitoAutogol = await confermaReferto({ ...inputBase, golMiei: 3, autogolAvversari: 1 });
-  check('validazione: conto con autogol accettato', esitoAutogol.partita.golCasa === 3);
+  const inCasaAutogol = esitoAutogol.partita.casa === squadra.id;
+  const golMieiAutogol = inCasaAutogol ? esitoAutogol.partita.golCasa : esitoAutogol.partita.golTrasferta;
+  check('validazione: conto con autogol accettato', golMieiAutogol === 3);
   // titolari ≠ 11: rifiutato
   let titolariErrati = false;
   try {

@@ -11,6 +11,8 @@ import type { Giocatore, Id, Partita, Squadra } from '../types/entities';
 import { RUOLO_PORTIERE } from './invariants';
 import { normalizzaNome } from './eventi';
 import { hashString, poisson, prng } from './random';
+import { VANTAGGIO_CASA_ELO } from './rating';
+import { CAMPIONI_MIN_FASCIA, DISTRIBUZIONE_RISULTATI } from '../data/distribuzioneRisultati';
 import {
   BONUS_FORMA_ASSIST,
   BONUS_FORMA_GOL,
@@ -100,14 +102,41 @@ export function golAttesi(ratingCasa: number, ratingTrasferta: number): { casa: 
 /**
  * Risultato simulato di una partita CPU: deterministico per ID partita
  * (seme = hash dell'ID, come lo shuffle del calendario). Nessun Math.random.
+ *
+ * Perche' campionamento empirico e non Poisson indipendente: il doppio Poisson
+ * assume gol casa/trasferta scorrelati e sottostima i pareggi bassi (0-0, 1-1)
+ * e sovrastima le combinazioni medie — distorsione corretta da Dixon-Coles
+ * (1997) con un fattore di dipendenza a basso punteggio. Campionando dalla
+ * distribuzione CONGIUNTA reale (18.011 partite top-5 2015-2025 condizionate
+ * da dr = ratingCasa + 100 - ratingTrasferta) si eredita gratis la
+ * microstruttura vera dei punteggi (correlazione, code pesanti) a parita'
+ * di forza. Fallback Poisson solo se fascia con < CAMPIONI_MIN_FASCIA.
+ * Pura, deterministica, consumo PRNG: 1 tiro nel caso empirico, 2 nel fallback.
  */
 export function simulaRisultato(
   partitaId: Id,
   ratingCasa: number,
   ratingTrasferta: number,
 ): { golCasa: number; golTrasferta: number } {
-  const { casa, trasferta } = golAttesi(ratingCasa, ratingTrasferta);
+  const dr = ratingCasa + VANTAGGIO_CASA_ELO - ratingTrasferta;
+  const rawMin = Math.floor(dr / 50) * 50;
+  const minDr = Math.min(400, Math.max(-300, rawMin));
+  const fascia = DISTRIBUZIONE_RISULTATI.find((f) => f.minDr === minDr);
   const rand = prng(hashString(partitaId));
+  if (fascia && fascia.campioni >= CAMPIONI_MIN_FASCIA) {
+    const soglia = rand() * fascia.campioni;
+    let cumul = 0;
+    for (let i = 0; i < fascia.conteggi.length; i++) {
+      cumul += fascia.conteggi[i] ?? 0;
+      if (soglia < cumul) {
+        return { golCasa: Math.floor(i / 8), golTrasferta: i % 8 };
+      }
+    }
+    for (let i = fascia.conteggi.length - 1; i >= 0; i--) {
+      if ((fascia.conteggi[i] ?? 0) > 0) return { golCasa: Math.floor(i / 8), golTrasferta: i % 8 };
+    }
+  }
+  const { casa, trasferta } = golAttesi(ratingCasa, ratingTrasferta);
   return { golCasa: poisson(rand, casa), golTrasferta: poisson(rand, trasferta) };
 }
 

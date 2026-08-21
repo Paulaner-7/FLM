@@ -82,7 +82,13 @@ export default function RefertoScreenshot({
   const analizza = useCallback(
     async (dataUrl: string): Promise<void> => {
       setVoti({ dataUrl, stato: 'analisi' });
-      const esito = await analizzaScreenshotReferto({ immagineBase64: dataUrl, nomiRosa, squadraNome });
+      let esito: Awaited<ReturnType<typeof analizzaScreenshotReferto>>;
+      try {
+        esito = await analizzaScreenshotReferto({ immagineBase64: dataUrl, nomiRosa, squadraNome });
+      } catch (e) {
+        setVoti({ dataUrl, stato: 'errore', errore: e instanceof Error ? e.message : 'LLM non disponibile: riprova quando torna la connessione.' });
+        return;
+      }
       if (esito.esito === 'errore_llm') {
         setVoti({ dataUrl, stato: 'errore', errore: `Errore del servizio di visione: ${esito.dettaglio}` });
         return;

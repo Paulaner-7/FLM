@@ -474,7 +474,7 @@ export function giocatoriCedibili(
 export { MAX_ROSA_MOVIMENTO, RUOLO_PORTIERE, giocatoriMovimento, proprietaAttivaDi };
 
 // ---------------------------------------------------------------------------
-// Testi fallback (PRD 4.6: nessuna chiamata LLM richiesta — il mondo non si ferma)
+// Testi di mercato (PRD 8.2: LLM obbligatorio per cronache; testi sotto sono per messaggi di sistema, non per bypassare LLM)
 // ---------------------------------------------------------------------------
 
 /** Formatta una cifra in € (es. "8,5 M€"). */

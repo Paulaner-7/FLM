@@ -76,14 +76,14 @@ export default function Competizioni({ carrieraId, onBack }: CompetizioniProps):
     };
   }, [primario, secondario]);
 
+  const giocateTotali = useMemo(() => dati ? dati.competizioni.reduce((acc, c) => acc + c.squadre.length, 0) : 0, [dati]);
+
   if (!dati) {
     return <main className="page-shell loading-page"><p>Caricamento competizioni…</p></main>;
   }
 
   const { carriera, squadra } = dati;
   const competizione = dati.competizioni.find((c) => c.id === selezionata) ?? null;
-
-  const giocateTotali = useMemo(() => dati.competizioni.reduce((acc, c) => acc + c.squadre.length, 0), [dati.competizioni]);
 
   return (
     <main className="page-shell">

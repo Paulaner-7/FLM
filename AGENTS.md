@@ -35,4 +35,5 @@ Prima di implementare una feature, rileggi la sezione del PRD relativa.
 - Il ponte dati con PES Editor (CSV formato editor + report leggibili per il fallback manuale)
   vive in `src/bridge`: legge da Dexie, non scrive (PRD 7.4).
 - L'LLM non decide mai valori finali: numeri coerenti garantiti dal motore (PRD 3.1).
+- **FLM è online-first: nessun fallback narrativo; LLM irraggiungibile = gioco in pausa con banner rosso e retry** (PRD 8.2, abroga PRD 4.6). La consultazione dei dati resta libera; ogni avanzamento (settimana, mercato, eventi, generazioni) è bloccato finché il provider non torna raggiungibile.
 - `npm run dev` per avviare l'app; `npm run build` per verificare tipi e build.

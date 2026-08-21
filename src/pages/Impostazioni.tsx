@@ -228,7 +228,7 @@ export default function Impostazioni({ onHome }: ImpostazioniProps): ReactElemen
         <div className="settings-heading">
           <p className="eyebrow">Motore LLM</p>
           <h1>Il narratore si configura.</h1>
-          <p className="intro">Base URL, chiave e modelli — tutto locale, mai nel repository. Senza chiave il gioco funziona comunque: eventi dal fallback offline (PRD 4.6). <strong>Puoi cambiare i due modelli ogni giorno</strong>: basta editare, salvare — il prossimo evento usa subito il nuovo.</p>
+          <p className="intro">Base URL, chiave e modelli — tutto locale, mai nel repository. FLM è online-first (PRD 8.2): senza connessione LLM il gioco è in pausa — avanza settimana, mercato, eventi e generazioni sono bloccati con banner rosso. <strong>Puoi cambiare i due modelli ogni giorno</strong>: basta editare, salvare — il prossimo evento usa subito il nuovo.</p>
         </div>
 
         <div className="settings-form">
@@ -244,7 +244,7 @@ export default function Impostazioni({ onHome }: ImpostazioniProps): ReactElemen
                   onChange={(event) => aggiorna('llmAttivo', event.target.checked)}
                 />
                 <span className="switch-track" aria-hidden="true" />
-                <span className="switch-copy">{form.llmAttivo ? 'Attivo' : 'Disattivo — solo fallback offline'}</span>
+                <span className="switch-copy">{form.llmAttivo ? 'Attivo' : 'Disattivo — gioco in pausa (serve LLM)'}</span>
               </label>
             </div>
           </div>

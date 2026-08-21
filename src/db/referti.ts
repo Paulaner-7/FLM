@@ -11,6 +11,7 @@
 
 import { db, newId } from './database';
 import { prossimePartiteUtente, avanzaSettimana } from './competizioni';
+import { assertLLMDisponibile } from '../llm/connectivity';
 import { registraVotoFinestra } from './vivaio';
 import {
   applicaConseguenze,
@@ -168,6 +169,22 @@ function validaInput(
  * fa avanzare la settimana (simulazione CPU a blocco).
  */
 export async function confermaReferto(input: InputConfermaReferto): Promise<EsitoConfermaReferto> {
+  // PRD 8.2: avanzaSettimana richiede LLM; verifica prima di qualsiasi scrittura
+  // in modo che il referto non venga salvato a metà se la settimana è bloccata.
+  const carrieraCheck = await db.carriere.get(input.carrieraId);
+  const statoCheck = await db.statoClub.get(input.carrieraId);
+  if (carrieraCheck && statoCheck) {
+    const prossime = await prossimePartiteUtente(input.carrieraId, carrieraCheck.squadraId);
+    const partitaCheck = await db.partite.get(input.partitaId);
+    if (partitaCheck && prossime[0]?.id === partitaCheck.id) {
+      const rimanentiCheck = (await db.partite.where('carrieraId').equals(input.carrieraId).toArray()).filter(
+        (p) => !p.giocata && p.settimana === partitaCheck.settimana && (p.casa === carrieraCheck.squadraId || p.trasferta === carrieraCheck.squadraId) && p.id !== partitaCheck.id,
+      );
+      if (rimanentiCheck.length === 0) {
+        await assertLLMDisponibile();
+      }
+    }
+  }
   const votiDaRegistrare: Array<{ giocatoreId: Id; voto: number }> = [];
   const esito = await db.transaction(
     'rw',
